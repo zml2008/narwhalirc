@@ -1,7 +1,5 @@
 package com.zachsthings.narwhal.irc;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.procedure.TObjectIntProcedure;
 import org.bukkit.ChatColor;
 import org.pircbotx.Colors;
 
@@ -11,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * This class exists to aid in the conversion of color codes from mIRC colors to 
+ * This class exists to aid in the conversion of color codes from mIRC colors to
  * Minecraft ChatColors. Mapping is not perfect, but most colors should come across fairly well.
  */
 public class IrcColor {
@@ -44,7 +42,7 @@ public class IrcColor {
     }
 
     public static String replaceColor(String orig, boolean fromIrc) {
-        
+
         if (fromIrc) {
             String result = orig;
             for (Map.Entry<String, ChatColor> entry : reverseMapping.entrySet()) {

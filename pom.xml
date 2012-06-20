@@ -1,15 +1,21 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>com.zachsthings.narwhal</groupId>
-    <artifactId>narwhal</artifactId>
-    <version>1.0-SNAPSHOT</version>
-  </parent>
-  <groupId>com.zachsthings.narwhal</groupId>
+  <groupId>com.zachsthings</groupId>
   <artifactId>narwhalirc</artifactId>
   <version>1.0-SNAPSHOT</version>
   <name>NarwhalIRC</name>
   <description>An irc bridge between the minecraft server and irc channels</description>
+
+    <repositories>
+        <repository>
+            <id>sk-repo</id>
+            <url>http://mvn2.sk89q.com/repo</url>
+        </repository>
+        <repository>
+            <id>zml-repo</id>
+            <url>http://files.zachsthings.com/repo</url>
+        </repository>
+    </repositories>
 
   <dependencies>
     <dependency>
@@ -17,6 +23,11 @@
       <artifactId>pircbotx</artifactId>
       <version>1.7</version>
     </dependency>
+      <dependency>
+          <groupId>com.sk89q</groupId>
+          <artifactId>commandbook</artifactId>
+          <version>2.1</version>
+      </dependency>
   </dependencies>
   <build>
     <plugins>

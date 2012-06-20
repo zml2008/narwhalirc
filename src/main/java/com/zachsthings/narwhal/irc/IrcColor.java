@@ -1,7 +1,7 @@
 package com.zachsthings.narwhal.irc;
 
-import org.bukkit.ChatColor;
 import org.pircbotx.Colors;
+import org.spout.api.ChatColor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,25 +20,25 @@ public class IrcColor {
         colorMapping.put(ChatColor.BLACK, Colors.BLACK);
         colorMapping.put(ChatColor.DARK_BLUE, Colors.DARK_BLUE);
         colorMapping.put(ChatColor.DARK_GREEN, Colors.DARK_GREEN);
-        colorMapping.put(ChatColor.DARK_AQUA, Colors.BOLD + Colors.TEAL);
+        colorMapping.put(ChatColor.DARK_CYAN, Colors.BOLD + Colors.TEAL);
         colorMapping.put(ChatColor.DARK_RED, Colors.BROWN);
-        colorMapping.put(ChatColor.DARK_PURPLE, Colors.PURPLE);
+        colorMapping.put(ChatColor.PURPLE, Colors.PURPLE);
         colorMapping.put(ChatColor.GOLD, Colors.BOLD + Colors.OLIVE);
         colorMapping.put(ChatColor.GRAY, Colors.LIGHT_GRAY);
         colorMapping.put(ChatColor.DARK_GRAY, Colors.DARK_GRAY);
         colorMapping.put(ChatColor.BLUE, Colors.BLUE);
-        colorMapping.put(ChatColor.GREEN, Colors.GREEN);
-        colorMapping.put(ChatColor.AQUA, Colors.TEAL);
+        colorMapping.put(ChatColor.BRIGHT_GREEN, Colors.GREEN);
+        colorMapping.put(ChatColor.CYAN, Colors.TEAL);
         colorMapping.put(ChatColor.RED, Colors.RED);
-        colorMapping.put(ChatColor.LIGHT_PURPLE, Colors.MAGENTA);
+        colorMapping.put(ChatColor.PINK, Colors.MAGENTA);
         colorMapping.put(ChatColor.YELLOW, Colors.OLIVE);
         colorMapping.put(ChatColor.WHITE, Colors.NORMAL);
         for (Map.Entry<ChatColor, String> entry : colorMapping.entrySet()) {
             reverseMapping.put(entry.getValue(), entry.getKey());
         }
         reverseMapping.put(Colors.YELLOW, ChatColor.YELLOW);
-        reverseMapping.put(Colors.TEAL, ChatColor.DARK_AQUA);
-        reverseMapping.put(Colors.CYAN, ChatColor.AQUA);
+        reverseMapping.put(Colors.TEAL, ChatColor.DARK_CYAN);
+        reverseMapping.put(Colors.CYAN, ChatColor.CYAN);
     }
 
     public static String replaceColor(String orig, boolean fromIrc) {
@@ -55,7 +55,7 @@ public class IrcColor {
             Matcher matcher = MC_CHAT_COLOR_REGEX.matcher(orig);
             StringBuffer result = new StringBuffer();
             while (matcher.find()) {
-                ChatColor color = ChatColor.getByChar(matcher.group(1).toLowerCase());
+                ChatColor color = ChatColor.byCode(Integer.valueOf(matcher.group(1).toLowerCase(), 16));
                 if (color != null) {
                     matcher.appendReplacement(result, colorMapping.get(color));
                 } else {

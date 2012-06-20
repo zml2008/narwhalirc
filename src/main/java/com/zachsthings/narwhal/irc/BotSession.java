@@ -1,98 +1,83 @@
 package com.zachsthings.narwhal.irc;
 
-import com.sk89q.commandbook.CommandBook;
-import com.sk89q.commandbook.CommandBookUtil;
-import com.sk89q.minecraft.util.commands.*;
-import com.sk89q.util.yaml.YAMLNode;
-import com.zachsthings.libcomponents.bukkit.YAMLNodeConfigurationNode;
-import com.zachsthings.libcomponents.config.ConfigurationBase;
-import com.zachsthings.libcomponents.config.ConfigurationNode;
-import com.zachsthings.libcomponents.config.Setting;
-import com.zachsthings.libcomponents.config.SettingBase;
-import org.bukkit.ChatColor;
 import org.pircbotx.Channel;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.exception.IrcException;
+import org.spout.api.ChatColor;
+import org.spout.api.exception.CommandException;
+import org.spout.api.exception.CommandUsageException;
+import org.spout.api.exception.ConfigurationException;
+import org.spout.api.exception.WrappedCommandException;
+import org.spout.api.util.config.MapConfiguration;
+import org.spout.api.util.config.annotated.AnnotatedConfiguration;
+import org.spout.api.util.config.annotated.Setting;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+
+import static com.zachsthings.narwhal.irc.NarwhalIRCPlugin.getNestedMap;
 
 /**
 * @author zml2008
 */
-public class BotSession extends ConfigurationBase {
+public class BotSession extends AnnotatedConfiguration {
     private final String server;
     private final PircBotX bot;
-    private final IrcBridge component;
-    private final Map<String, Map<String, BotCommandSender>> senders = new HashMap<String, Map<String, BotCommandSender>>();
-    private final Map<String, ChannelCommandSender> channelSenders = new HashMap<String, ChannelCommandSender>();
-    private SSlConfiguration ssl;
+    private final NarwhalIRCPlugin plugin;
+    private final Map<String, Map<String, BotCommandSource>> senders = new HashMap<String, Map<String, BotCommandSource>>();
+    private final Map<String, ChannelCommandSource> channelSenders = new HashMap<String, ChannelCommandSource>();
+    @Setting("ssl") private SSlConfiguration ssl;
     @Setting("nick") private String nick = "NarwhalBot";
-    @Setting("channels") private Map<String, Map<String, Object>> rawChannels = createDefaultChannels();
-    @Setting("port") private String port = "6667";
+    @Setting("channels") private Map<String, Map<?, ?>> rawChannels = createDefaultChannels();
+    @Setting("port") private int port = 6667;
     @Setting("nickserv-pass") private String nickServPass;
     @Setting("strip-color") private boolean stripColor;
     @Setting("bind-address") private String bindAddress;
 
-    @SettingBase("ssl")
-    private static class SSlConfiguration extends ConfigurationBase {
+    private static class SSlConfiguration extends AnnotatedConfiguration {
         @Setting("trust-all-certs") public boolean trustAllCerts;
+        @Setting("enabled") public boolean enabled;
     }
 
-    private static Map<String, Map<String, Object>> createDefaultChannels() {
-        Map<String, Map<String, Object>> defChannel = new HashMap<String, Map<String, Object>>();
-        CommandBookUtil.getNestedMap(defChannel, "#zml").put("receive-events",
-                Arrays.asList("join", "quit", "kick", "message", "me"));
+    private static Map<String, Map<?, ?>> createDefaultChannels() {
+        Map<String, Map<?, ?>> defChannel = new HashMap<String, Map<?, ?>>();
+        Map<String, Object> child = new HashMap<String, Object>();
+        child.put("receive-events", Arrays.asList(PassedEvent.values()));
+        defChannel.put("#zml", child);
         return defChannel;
     }
 
-    public BotSession(String server, IrcBridge component) {
+    public BotSession(String server, NarwhalIRCPlugin plugin) {
         this.server = server;
-        this.component = component;
+        this.plugin = plugin;
         this.bot = new PircBotX();
-        bot.getListenerManager().addListener(new NarwhalBotListener(this, component));
+        bot.getListenerManager().addListener(new NarwhalBotListener(this, plugin));
         bot.setMessageDelay(250);
         bot.setLogin("Narwhal");
-    }
-
-    @Override
-    public void load(ConfigurationNode node) {
-        ssl = new SSlConfiguration();
-        ssl.load(node);
-        super.load(node);
+        bot.useShutdownHook(true);
     }
 
     public boolean connect() {
         bot.startIdentServer();
         bot.setName(nick);
-        boolean ssl = false;
-        String localPort = port;
-        if (localPort.startsWith("+")) {
-            localPort = localPort.substring(1);
-            ssl = true;
-        }
-        int port = 6667;
-        try {
-            port = Integer.parseInt(localPort);
-        } catch (NumberFormatException ignore) {
-        }
 
         if (bindAddress != null && bindAddress.length() > 0) {
             try {
                 bot.setInetAddress(InetAddress.getByName(bindAddress));
             } catch (UnknownHostException e) {
-                CommandBook.logger().warning("NarwhalIRC: Error setting bind address: " + e.getMessage());
+                plugin.getLogger().log(Level.WARNING, "Error setting bind address: " + e.getMessage(), e);
                 e.printStackTrace();
             }
         }
 
         try {
-            if (ssl) {
+            if (ssl.enabled) {
                 UtilSSLSocketFactory factory = new UtilSSLSocketFactory();
                 if (this.ssl.trustAllCerts) {
                     factory.trustAllCertificates();
@@ -116,50 +101,57 @@ public class BotSession extends ConfigurationBase {
     }
 
     public void joinChannels() {
-        for (Entry<String, Map<String, Object>> entry : rawChannels.entrySet()) {
-            ChannelCommandSender sender = new ChannelCommandSender(bot.getChannel(entry.getKey()), stripColor);
-            sender.load(new YAMLNodeConfigurationNode(new YAMLNode(entry.getValue(), true)));
-            if (sender.getKey() != null) {
-                bot.joinChannel(entry.getKey(), sender.getKey());
+        for (Entry<String, Map<?, ?>> entry : rawChannels.entrySet()) {
+            ChannelCommandSource source = new ChannelCommandSource(bot.getChannel(entry.getKey()), stripColor);
+            MapConfiguration config = new MapConfiguration(entry.getValue());
+            try {
+                config.load();
+            } catch (ConfigurationException ignore) {}
+            source.load(config);
+            try {
+                config.save();
+            } catch (ConfigurationException ignore) {}
+            entry.setValue(config.getMap());
+            if (source.getKey() != null) {
+                bot.joinChannel(entry.getKey(), source.getKey());
             } else {
                 bot.joinChannel(entry.getKey());
             }
-            channelSenders.put(entry.getKey(), sender);
+            channelSenders.put(entry.getKey(), source);
         }
     }
 
-    public void quit(String reason, boolean shutdown) {
-        bot.quitServer(reason);
+    public void quit(String reason) {
+        if (bot.isConnected()) {
+            bot.quitServer(reason);
+        }
         senders.clear();
         channelSenders.clear();
-        if (shutdown) {
-            bot.shutdown();
-        }
     }
 
     public String getServer() {
         return server;
     }
 
-    public BotCommandSender getSender(String name, String chan) {
+    public BotCommandSource getSender(String name, String chan) {
         User user = bot.getUser(name);
         Channel channel = chan == null ? null : bot.getChannel(chan);
-        return getSender(user, channel);
+        return getCommandSource(user, channel);
     }
 
-    public BotCommandSender getSender(User user, Channel channel) {
-        Map<String, BotCommandSender> inChannel = CommandBookUtil.getNestedMap(senders,
+    public BotCommandSource getCommandSource(User user, Channel channel) {
+        Map<String, BotCommandSource> inChannel = getNestedMap(senders,
                 channel == null ? null : channel.getName());
-        BotCommandSender sender = inChannel.get(user.getNick());
-        if (sender == null) {
-            sender = new BotCommandSender(user, channel, stripColor);
-            inChannel.put(user.getNick(), sender);
+        BotCommandSource source = inChannel.get(user.getNick());
+        if (source == null) {
+            source = new BotCommandSource(user, channel, stripColor);
+            inChannel.put(user.getNick(), source);
         }
-        return sender;
+        return source;
     }
 
     public void removeSender(User user, Channel channel) {
-        Map<String, BotCommandSender> inChannel = CommandBookUtil.getNestedMap(senders, channel.getName());
+        Map<String, BotCommandSource> inChannel = getNestedMap(senders, channel.getName());
         if (inChannel != null) {
             inChannel.remove(user.getNick());
         }
@@ -171,11 +163,11 @@ public class BotSession extends ConfigurationBase {
         }
     }
 
-    public Collection<ChannelCommandSender> getChannels() {
+    public Collection<ChannelCommandSource> getChannels() {
         return channelSenders.values();
     }
 
-    public ChannelCommandSender getChannel(String name) {
+    public ChannelCommandSource getChannel(String name) {
         return channelSenders.get(name);
     }
 
@@ -183,31 +175,27 @@ public class BotSession extends ConfigurationBase {
      * Called on a command from the bot.
      *
      * @param user The User who sent the command
-     * @param source The Channel this command came from
+     * @param channel The Channel this command came from
      * @param args The arguments for the command
      * @return whether the command could be found.
      */
-    public boolean handleCommand(User user, Channel source, String[] args) {
-        BotCommandSender sender = getSender(user, source);
-        if (!component.getBotCommandsManager().hasCommand(args[0])) return false;
+    public boolean handleCommand(User user, Channel channel, String[] args) {
+        BotCommandSource source = getCommandSource(user, channel);
+        if (!plugin.getBotCommands().hasChild(args[0])) return false;
         try {
-            component.getBotCommandsManager().execute(args, sender, sender, user.getBot(), source);
-        } catch (CommandPermissionsException e) {
-            sender.sendMessage(ChatColor.RED + "You don't have permission.");
-        } catch (MissingNestedCommandException e) {
-            sender.sendMessage(ChatColor.RED + e.getUsage());
+            plugin.getBotCommands().execute(source, args, -1, false);
         } catch (CommandUsageException e) {
-            sender.sendMessage(ChatColor.RED + e.getMessage());
-            sender.sendMessage(ChatColor.RED + e.getUsage());
+            source.sendMessage(ChatColor.RED + e.getMessage());
+            source.sendMessage(ChatColor.RED + e.getUsage());
         } catch (WrappedCommandException e) {
             if (e.getCause() instanceof NumberFormatException) {
-                sender.sendMessage(ChatColor.RED + "Number expected, string received instead.");
+                source.sendMessage(ChatColor.RED + "Number expected, string received instead.");
             } else {
-                sender.sendMessage(ChatColor.RED + "An error has occurred. See console.");
+                source.sendMessage(ChatColor.RED + "An error has occurred. See console.");
                 e.printStackTrace();
             }
         } catch (CommandException e) {
-            sender.sendMessage(ChatColor.RED + e.getMessage());
+            source.sendMessage(ChatColor.RED + e.getMessage());
         }
         return true;
     }

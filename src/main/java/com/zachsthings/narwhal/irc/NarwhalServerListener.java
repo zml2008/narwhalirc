@@ -11,13 +11,41 @@ import org.spout.api.event.player.PlayerKickEvent;
 import org.spout.api.event.player.PlayerLeaveEvent;
 import org.spout.api.event.server.permissions.PermissionGetAllWithNodeEvent;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 
 public class NarwhalServerListener implements Listener {
+    private static final Map<String, Integer> dupeMessages = new HashMap<String, Integer>();
     private final NarwhalIRCPlugin plugin;
 
     public NarwhalServerListener(NarwhalIRCPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    public static boolean checkDupeMessage(String message) {
+        Integer val = dupeMessages.get(message);
+        if (val == null) {
+            return true;
+        } else if (val == 0) {
+            dupeMessages.remove(message);
+            return true;
+        } else {
+            dupeMessages.put(message, --val);
+            return false;
+        }
+    }
+
+    private void addDupeMessage(PassedEvent event, String message) {
+        int chanCount = 0;
+        for (BotSession bot : plugin.getBots()) {
+            for (ChannelCommandSource channel : bot.getChannels()) {
+                if (channel.receivesEvent(event)) {
+                    ++chanCount;
+                }
+            }
+        }
+        dupeMessages.put(message, chanCount);
     }
 
     @EventHandler(order = Order.MONITOR)
@@ -25,6 +53,7 @@ public class NarwhalServerListener implements Listener {
         if (event.isCancelled()) {
             return;
         }
+        addDupeMessage(PassedEvent.MESSAGE, String.format(event.getFormat(), event.getPlayer().getDisplayName(),  event.getMessage()));
 
         for (BotSession bot : plugin.getBots()) {
             for (ChannelCommandSource chan : bot.getChannels()) {
@@ -44,6 +73,7 @@ public class NarwhalServerListener implements Listener {
         if (event.getMessage() == null) {
             return;
         }
+        addDupeMessage(PassedEvent.JOIN, event.getMessage());
         plugin.broadcastBotMessage(PassedEvent.JOIN, "[" + event.getMessage() + ChatColor.WHITE + "]");
     }
 
@@ -52,8 +82,10 @@ public class NarwhalServerListener implements Listener {
         if (event.getMessage() == null) {
             return;
         }
+        final PassedEvent passedEvent = event instanceof PlayerKickEvent ? PassedEvent.KICK : PassedEvent.QUIT;
+        addDupeMessage(passedEvent, event.getMessage());
 
-        plugin.broadcastBotMessage(event instanceof PlayerKickEvent ? PassedEvent.KICK : PassedEvent.QUIT,
+        plugin.broadcastBotMessage(passedEvent,
                 "[" + event.getMessage() + ChatColor.WHITE + "]");
     }
 

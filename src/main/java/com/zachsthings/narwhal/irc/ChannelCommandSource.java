@@ -59,6 +59,9 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
 	// -- Spout interface methods
 
     public boolean sendMessage(String message) {
+        if (!NarwhalServerListener.checkDupeMessage(message)) {
+            return false;
+        }
         return sendRawMessage(stripColor ? ChatColor.strip(message) : IrcColor.replaceColor(message, false));
     }
 

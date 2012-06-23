@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 public class IrcColor {
     private static final Pattern MC_CHAT_COLOR_REGEX = Pattern.compile("(?i)\u00A7([A-FK0-9])");
     private static Map<ChatColor, String> colorMapping = new HashMap<ChatColor, String>(ChatColor.values().length);
-    private static Map<String, ChatColor> reverseMapping = new HashMap<String, ChatColor>(colorMapping.size());
+    private static Map<String, ChatColor> reverseMapping = new HashMap<String, ChatColor>(ChatColor.values().length);
     static {
         colorMapping.put(ChatColor.BLACK, Colors.BLACK);
         colorMapping.put(ChatColor.DARK_BLUE, Colors.DARK_BLUE);

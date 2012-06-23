@@ -10,6 +10,7 @@ import org.spout.api.exception.CommandException;
 import org.spout.api.exception.CommandUsageException;
 import org.spout.api.exception.ConfigurationException;
 import org.spout.api.exception.WrappedCommandException;
+import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.MapConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.Setting;
@@ -43,6 +44,10 @@ public class BotSession extends AnnotatedConfiguration {
     private static class SSlConfiguration extends AnnotatedConfiguration {
         @Setting("trust-all-certs") public boolean trustAllCerts;
         @Setting("enabled") public boolean enabled;
+
+        public SSlConfiguration(Configuration config) {
+            super(config);
+        }
     }
 
     private static Map<String, Map<?, ?>> createDefaultChannels() {
@@ -53,7 +58,8 @@ public class BotSession extends AnnotatedConfiguration {
         return defChannel;
     }
 
-    public BotSession(String server, NarwhalIRCPlugin plugin) {
+    public BotSession(Configuration config, String server, NarwhalIRCPlugin plugin) {
+        super(config);
         this.server = server;
         this.plugin = plugin;
         this.bot = new PircBotX();
@@ -102,22 +108,23 @@ public class BotSession extends AnnotatedConfiguration {
 
     public void joinChannels() {
         for (Entry<String, Map<?, ?>> entry : rawChannels.entrySet()) {
-            ChannelCommandSource source = new ChannelCommandSource(bot.getChannel(entry.getKey()), stripColor);
-            MapConfiguration config = new MapConfiguration(entry.getValue());
+            ChannelCommandSource source = new ChannelCommandSource(new MapConfiguration(entry.getValue()),
+                    bot.getChannel(entry.getKey()), stripColor);
             try {
-                config.load();
-            } catch (ConfigurationException ignore) {}
-            source.load(config);
-            try {
-                config.save();
-            } catch (ConfigurationException ignore) {}
-            entry.setValue(config.getMap());
+                source.load();
+            } catch (ConfigurationException e) {
+                plugin.getLogger().log(Level.SEVERE, "Error loading channel config data!", e);
+            }
             if (source.getKey() != null) {
                 bot.joinChannel(entry.getKey(), source.getKey());
             } else {
                 bot.joinChannel(entry.getKey());
             }
             channelSenders.put(entry.getKey(), source);
+            try {
+                source.save();
+            } catch (ConfigurationException ignore) {
+            }
         }
     }
 

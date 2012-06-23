@@ -4,3 +4,4 @@ author: "zml2008"
 description: "${project.description}"
 main: com.zachsthings.narwhal.irc.NarwhalIRCPlugin
 platform: SERVER
+reload: true

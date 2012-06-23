@@ -20,7 +20,6 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import java.util.regex.Matcher;
 
 /**
  * @author zml2008
@@ -58,7 +57,11 @@ public class NarwhalIRCPlugin extends CommonPlugin {
 
     @Override
     public void onEnable() {
-        loadConfig();
+        try {
+            loadConfig();
+        } catch (ConfigurationException e) {
+            getLogger().log(Level.SEVERE, "Unable to load configuration for plugin: " + e.getMessage(), e);
+        }
         DefaultPermissions.addDefaultPermission(IRC_BROADCAST_PERMISSION);
         Spout.getEngine().getRootCommand().addSubCommands(this, Commands.class, commandRegistration);
         Spout.getEventManager().registerEvents(new NarwhalServerListener(this), this);
@@ -73,7 +76,11 @@ public class NarwhalIRCPlugin extends CommonPlugin {
             bot.quit("Reloading NarwhalIRC!");
         }
         bots.clear();
-        loadConfig();
+        try {
+            loadConfig();
+        } catch (ConfigurationException e) {
+            getLogger().log(Level.SEVERE, "Unable to load configuration for plugin: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -87,28 +94,9 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     private class LocalConfiguration extends AnnotatedConfiguration {
         @Setting("command-prefix") public String commandPrefix = ".";
         @Setting("connections") public Map<String, Map<?, ?>> serverMap = createServerMap();
-        private final YamlConfiguration config;
 
         public LocalConfiguration(File file) {
-            config = new YamlConfiguration(file);
-            try {
-                config.load();
-            } catch (ConfigurationException e) {
-                getLogger().log(Level.WARNING, "Error loading config!", e);
-            }
-        }
-
-        public void load() {
-            load(config);
-        }
-
-        public void save() {
-            save(config);
-            try {
-                config.save();
-            } catch (ConfigurationException e) {
-                getLogger().log(Level.WARNING, "Error saving config!", e);
-            }
+            super(new YamlConfiguration(file));
         }
 
         private Map<String, Map<?, ?>> createServerMap() {
@@ -120,30 +108,25 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         }
     }
 
-    protected void loadConfig() {
+    protected void loadConfig() throws ConfigurationException{
         config = new LocalConfiguration(new File(getDataFolder(), "config.yml"));
         config.load();
         for (Map.Entry<String, Map<?, ?>> entry : config.serverMap.entrySet()) {
-            BotSession bot = new BotSession(entry.getKey(), this);
-            MapConfiguration config = new MapConfiguration(entry.getValue());
-            try {
-                config.load();
-            } catch (ConfigurationException ignore) {}
-            bot.load(config);
-
-            bots.put(entry.getKey(), bot);
+            BotSession bot = new BotSession(new MapConfiguration(entry.getValue()), entry.getKey(), this);
+            bot.load();
             bot.connect();
             bot.joinChannels();
-
-            try {
-                bot.save(config);
-                config.save();
-            } catch (ConfigurationException ignore) {}
-            entry.setValue(config.getMap());
+            bots.put(entry.getKey(), bot);
+            bot.save();
         }
         config.save();
     }
 
+    /**
+     * Broadcast a message to all bots that receive the given {@link PassedEvent}
+     * @param type The type of message being passed
+     * @param message The message to broadcast
+     */
     public void broadcastBotMessage(PassedEvent type, String message) {
         for (BotSession bot : bots.values()) {
 			for (ChannelCommandSource chan : bot.getChannels()) {

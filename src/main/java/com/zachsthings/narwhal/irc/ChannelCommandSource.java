@@ -9,6 +9,7 @@ import org.spout.api.data.ValueHolderBase;
 import org.spout.api.event.Result;
 import org.spout.api.event.server.permissions.PermissionNodeEvent;
 import org.spout.api.geo.World;
+import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.ConfigurationNodeSource;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.Setting;
@@ -29,15 +30,11 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
     private final Channel channel;
     private boolean stripColor;
 
-    public ChannelCommandSource(Channel channel, boolean stripColor) {
+    public ChannelCommandSource(Configuration config, Channel channel, boolean stripColor) {
+        super(config);
         this.channel = channel;
         this.stripColor = stripColor;
     }
-
-	@Override
-	public void load(ConfigurationNodeSource node) {
-		super.load(node);
-	}
 
 	public String getKey() {
 		return channelKey;

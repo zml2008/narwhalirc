@@ -62,11 +62,10 @@ public class BotSession extends AnnotatedConfiguration {
         super(config);
         this.server = server;
         this.plugin = plugin;
-        this.bot = new PircBotX();
+        this.bot = new NarwhalBot();
         bot.getListenerManager().addListener(new NarwhalBotListener(this, plugin));
         bot.setMessageDelay(250);
         bot.setLogin("Narwhal");
-        bot.useShutdownHook(true);
     }
 
     public boolean connect() {
@@ -128,9 +127,14 @@ public class BotSession extends AnnotatedConfiguration {
         }
     }
 
-    public void quit(String reason) {
+    public void quit(String reason, boolean shutdown) {
         if (bot.isConnected()) {
-            bot.quitServer(reason);
+            if (shutdown) {
+                bot.sendRawLineNow("QUIT :" + reason);
+                bot.shutdown();
+            } else {
+                bot.quitServer(reason);
+            }
         }
         senders.clear();
         channelSenders.clear();

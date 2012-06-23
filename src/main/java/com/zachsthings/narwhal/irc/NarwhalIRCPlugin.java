@@ -73,7 +73,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     public void onReload() {
         super.onReload();
         for (BotSession bot : bots.values()) {
-            bot.quit("Reloading NarwhalIRC!");
+            bot.quit("Reloading NarwhalIRC!", true);
         }
         bots.clear();
         try {
@@ -86,7 +86,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     @Override
     public void onDisable() {
         for (BotSession bot : bots.values()) {
-            bot.quit("Disabling");
+            bot.quit("Disabling", true);
         }
         bots.clear();
     }

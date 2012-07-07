@@ -1,16 +1,16 @@
 package com.zachsthings.narwhal.irc;
 
-import org.pircbotx.Channel;
-import org.pircbotx.PircBotX;
-import org.spout.api.ChatColor;
 import org.spout.api.Spout;
+import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
 import org.spout.api.command.CommandSource;
 import org.spout.api.command.annotated.Command;
 import org.spout.api.exception.CommandException;
 import org.spout.api.player.Player;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author zml2008
@@ -25,24 +25,26 @@ public class BasicBotCommands {
     @Command(aliases = {"players", "ply"},
             desc = "Return the online players")
     public void onlinePlayers(CommandContext args, BotCommandSource sender) throws CommandException {
-        StringBuilder build = new StringBuilder();
+        List<Object> build = new ArrayList<Object>();
         Player[] onlinePlayers = Spout.getEngine().getOnlinePlayers();
         if (onlinePlayers.length > 0) {
             for (Player player : onlinePlayers) {
-                if (build.length() == 0) {
-                    build.append("Online players: (")
-                            .append(onlinePlayers.length).append("/")
-                            .append(Spout.getEngine().getMaxPlayers())
-                            .append("): ");
+                if (build.size() == 0) {
+                    build.add("Online players: (");
+                    build.add(onlinePlayers.length);
+                    build.add("/");
+                    build.add(Spout.getEngine().getMaxPlayers());
+                    build.add("): ");
                 } else {
-                    build.append(", ");
+                    build.add(", ");
                 }
-                build.append(player.getDisplayName()).append(ChatColor.WHITE);
+                build.add(player.getDisplayName());
+                build.add(ChatStyle.RESET);
             }
         } else {
-            build.append("No players online.");
+            build.add("No players online.");
         }
-        sender.sendMessage(build.toString());
+        sender.sendMessage(build);
     }
 
     @Command(aliases = {"echo"},
@@ -67,8 +69,8 @@ public class BasicBotCommands {
     @Command(aliases = "msg", desc = "Sends a message to a player on the server", usage = "<player> <message>", min = 2)
     public void msg(CommandContext args, BotCommandSource sender) throws CommandException {
         CommandSource target = matchSinglePlayer(args.getString(0));
-        target.sendMessage(ChatColor.GRAY + "IRC-PM from " +  sender.getUser().getServer() +
-                ":" + sender.getName() + ": " + ChatColor.WHITE + args.getJoinedString(1));
+        target.sendMessage(ChatStyle.GRAY, "IRC-PM from ",  sender.getUser().getServer(),
+                ":", sender.getName(), ": ", ChatStyle.RESET, args.getJoinedString(1));
         sender.sendMessage("Message sent to " + target.getName());
     }
 

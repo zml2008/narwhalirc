@@ -1,6 +1,6 @@
 package com.zachsthings.narwhal.irc;
 
-import org.spout.api.ChatColor;
+import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.event.EventHandler;
 import org.spout.api.event.Listener;
 import org.spout.api.event.Order;
@@ -11,7 +11,10 @@ import org.spout.api.event.player.PlayerKickEvent;
 import org.spout.api.event.player.PlayerLeaveEvent;
 import org.spout.api.event.server.permissions.PermissionGetAllWithNodeEvent;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
@@ -74,19 +77,27 @@ public class NarwhalServerListener implements Listener {
             return;
         }
         addDupeMessage(PassedEvent.JOIN, event.getMessage());
-        plugin.broadcastBotMessage(PassedEvent.JOIN, "[" + event.getMessage() + ChatColor.WHITE + "]");
+        List<Object> items = new ArrayList<Object>();
+        items.add("[");
+        items.addAll(Arrays.asList(event.getMessage()));
+        items.add(ChatStyle.RESET);
+        items.add("]");
+        plugin.broadcastBotMessage(PassedEvent.JOIN, items);
     }
 
     @EventHandler(order = Order.MONITOR)
     public void onQuit(PlayerLeaveEvent event) {
-        if (event.getMessage() == null) {
+        if (event.isCancelled() || event.getMessage() == null) {
             return;
         }
         final PassedEvent passedEvent = event instanceof PlayerKickEvent ? PassedEvent.KICK : PassedEvent.QUIT;
-        addDupeMessage(passedEvent, event.getMessage());
-
-        plugin.broadcastBotMessage(passedEvent,
-                "[" + event.getMessage() + ChatColor.WHITE + "]");
+        addDupeMessage(passedEvent, ChatStyle.stringify(event.getMessage()));
+        List<Object> items = new ArrayList<Object>();
+        items.add("[");
+        items.addAll(Arrays.asList(event.getMessage()));
+        items.add(ChatStyle.RESET);
+        items.add("]");
+        plugin.broadcastBotMessage(passedEvent, items);
     }
 
     @EventHandler(order = Order.EARLIEST)

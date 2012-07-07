@@ -1,11 +1,12 @@
 package com.zachsthings.narwhal.irc;
 
+import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
 import org.pircbotx.PircBotX;
 import org.pircbotx.hooks.Listener;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.*;
-import org.spout.api.ChatColor;
 import org.spout.api.Spout;
+import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.scheduler.TaskPriority;
 
 import java.util.regex.Matcher;
@@ -31,11 +32,10 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             ChannelCommandSource source = session.getChannel(event.getChannel().getName());
             if (source != null) {
-                Spout.getEngine().broadcastMessage(source.getIrcToServerFormat()
+                Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, source.getIrcToServerFormat()
                         .replaceAll("%name%", Matcher.quoteReplacement(event.getUser().getNick()))
                         .replaceAll("%channel%", Matcher.quoteReplacement(event.getChannel().getName()))
-                        .replaceAll("%msg%", Matcher.quoteReplacement(IrcColor.replaceColor(event.getMessage(), true)))
-                        , NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION);
+                        .replaceAll("%msg%", Matcher.quoteReplacement(IrcStyleHandler.INSTANCE.fromString(event.getMessage()))));
             }
         }
     }
@@ -55,8 +55,8 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     @Override
     public void onJoin(JoinEvent<PircBotX> event) {
         if (event.getUser().getNick().equals(event.getBot().getNick())) return;
-        Spout.getEngine().broadcastMessage(ChatColor.BLUE + event.getUser().getNick()
-                + " has joined " + event.getChannel().getName(), NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION);
+        Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
+                " has joined ", event.getChannel().getName());
     }
 
 
@@ -70,9 +70,8 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             message = ": " + event.getReason();
         }
-        Spout.getEngine().broadcastMessage(ChatColor.BLUE + event.getUser().getNick()
-                + " has left " + event.getChannel().getName()
-                + message, NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION);
+        Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
+                " has left ", event.getChannel().getName(), message);
     }
 
     @Override
@@ -87,8 +86,8 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             message = ": " + event.getReason();
         }
-        Spout.getEngine().broadcastMessage(ChatColor.BLUE + event.getUser().getNick()
-                + " has left IRC" + message, NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION);
+        Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE,
+                event.getUser().getNick(), " has left IRC", message);
     }
 
     @Override
@@ -107,7 +106,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     @Override
     public void onAction(ActionEvent<PircBotX> event) {
         if (!event.getUser().getNick().equals(event.getBot().getNick())) {
-            Spout.getEngine().broadcastMessage(event.getChannel().getName() + ": * " + event.getUser().getNick() + " " + event.getAction(), NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION);
+            Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, event.getChannel().getName(), ": * ", event.getUser().getNick(), " ", event.getAction());
         }
     }
 

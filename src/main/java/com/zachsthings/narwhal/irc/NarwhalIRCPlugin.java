@@ -1,8 +1,8 @@
 package com.zachsthings.narwhal.irc;
 
 import org.pircbotx.Channel;
-import org.spout.api.ChatColor;
 import org.spout.api.Spout;
+import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
 import org.spout.api.command.CommandSource;
 import org.spout.api.command.RootCommand;
@@ -127,7 +127,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
      * @param type The type of message being passed
      * @param message The message to broadcast
      */
-    public void broadcastBotMessage(PassedEvent type, String message) {
+    public void broadcastBotMessage(PassedEvent type, Object... message) {
         for (BotSession bot : bots.values()) {
 			for (ChannelCommandSource chan : bot.getChannels()) {
 				if (chan.receivesEvent(type)) {
@@ -187,16 +187,19 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         @CommandPermissions("narwhal.irc.channels")
         public void channels(CommandContext args, CommandSource sender) throws CommandException {
             for (BotSession bot : bots.values()) {
-                StringBuilder builder = new StringBuilder();
-                builder.append(bot.getServer()).append(": ");
+                List<Object> builder = new ArrayList<Object>();
+                builder.add(ChatStyle.BLUE);
+                builder.add(bot.getServer());
+                builder.add(": ");
                 for (Iterator<ChannelCommandSource> i = bot.getChannels().iterator(); i.hasNext(); ) {
                     final Channel chan = i.next().getChannel();
-                    builder.append(chan.getChannelKey() == null ? "" : "+").append(chan.getName());
+                    builder.add(chan.getChannelKey() == null ? "" : "+");
+                    builder.add(chan.getName());
                     if (i.hasNext()) {
-                        builder.append(", ");
+                        builder.add(", ");
                     }
                 }
-                sender.sendMessage(ChatColor.BLUE + builder.toString());
+                sender.sendMessage(builder);
             }
         }
     }

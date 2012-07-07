@@ -5,7 +5,7 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.exception.IrcException;
-import org.spout.api.ChatColor;
+import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.exception.CommandException;
 import org.spout.api.exception.CommandUsageException;
 import org.spout.api.exception.ConfigurationException;
@@ -196,17 +196,17 @@ public class BotSession extends AnnotatedConfiguration {
         try {
             plugin.getBotCommands().execute(source, args, -1, false);
         } catch (CommandUsageException e) {
-            source.sendMessage(ChatColor.RED + e.getMessage());
-            source.sendMessage(ChatColor.RED + e.getUsage());
+            source.sendMessage(ChatStyle.RED, e.getMessage());
+            source.sendMessage(ChatStyle.RED, e.getUsage());
         } catch (WrappedCommandException e) {
             if (e.getCause() instanceof NumberFormatException) {
-                source.sendMessage(ChatColor.RED + "Number expected, string received instead.");
+                source.sendMessage(ChatStyle.RED, "Number expected, string received instead.");
             } else {
-                source.sendMessage(ChatColor.RED + "An error has occurred. See console.");
+                source.sendMessage(ChatStyle.RED, "An error has occurred. See console.");
                 e.printStackTrace();
             }
         } catch (CommandException e) {
-            source.sendMessage(ChatColor.RED + e.getMessage());
+            source.sendMessage(ChatStyle.RED, e.getMessage());
         }
         return true;
     }

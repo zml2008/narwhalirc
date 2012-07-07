@@ -1,8 +1,10 @@
 package com.zachsthings.narwhal.irc;
 
+import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
+import com.zachsthings.narwhal.irc.chatstyle.NoStyleHandler;
 import org.pircbotx.Channel;
 import org.pircbotx.User;
-import org.spout.api.ChatColor;
+import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandSource;
 import org.spout.api.data.ValueHolder;
 import org.spout.api.data.ValueHolderBase;
@@ -32,19 +34,20 @@ public class BotCommandSource implements CommandSource {
         this.stripColor = stripColor;
     }
 
-    public boolean sendMessage(String message) {
+    public boolean sendMessage(Object... message) {
         if (channel == null) {
-            return sendRawMessage(stripColor ? ChatColor.strip(message) : IrcColor.replaceColor(message, false));
+            user.getBot().sendMessage(user, stripColor ? ChatStyle.stringify(NoStyleHandler.ID, message) : ChatStyle.stringify(IrcStyleHandler.ID, message));
         } else {
-            return sendRawMessage("_" + user.getNick().substring(1) + ": " + (stripColor ? ChatColor.strip(message) : IrcColor.replaceColor(message, false)));
+            user.getBot().sendMessage(channel, "_" + user.getNick().substring(1) + ": " + (stripColor ? ChatStyle.stringify(NoStyleHandler.ID, message) : ChatStyle.stringify(IrcStyleHandler.ID, message)));
         }
+        return true;
     }
 
-    public boolean sendRawMessage(String message) {
+    public boolean sendRawMessage(Object... message) {
         if (channel == null) {
-            user.getBot().sendMessage(user, message);
+            user.getBot().sendMessage(user, ChatStyle.stringify(IrcStyleHandler.ID, message));
         } else {
-            user.getBot().sendMessage(channel, message);
+            user.getBot().sendMessage(channel, ChatStyle.stringify(IrcStyleHandler.ID, message));
         }
         return true;
     }

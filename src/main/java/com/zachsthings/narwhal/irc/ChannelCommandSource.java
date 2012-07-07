@@ -1,8 +1,10 @@
 package com.zachsthings.narwhal.irc;
 
+import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
+import com.zachsthings.narwhal.irc.chatstyle.NoStyleHandler;
 import org.pircbotx.Channel;
-import org.spout.api.ChatColor;
 import org.spout.api.Spout;
+import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandSource;
 import org.spout.api.data.ValueHolder;
 import org.spout.api.data.ValueHolderBase;
@@ -10,7 +12,6 @@ import org.spout.api.event.Result;
 import org.spout.api.event.server.permissions.PermissionNodeEvent;
 import org.spout.api.geo.World;
 import org.spout.api.util.config.Configuration;
-import org.spout.api.util.config.ConfigurationNodeSource;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.Setting;
 
@@ -24,7 +25,7 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
 	@Setting("key") private String channelKey;
 	@Setting("permissions") private Map<String, Boolean> permissions = new HashMap<String, Boolean>();
 	@Setting("receive-events") private Set<PassedEvent> receiveEvents = new HashSet<PassedEvent>(Arrays.asList(PassedEvent.values()));
-    @Setting({"format", "irc-to-server"}) public String ircToServerFormat = "<%name%> %channel%: %msg%";
+    @Setting({"format", "irc-to-server"}) public List<Object> ircToServerFormat = "<%name%> %channel%: %msg%";
     @Setting({"format", "server-to-irc"}) private String serverToIrcFormat = "%event%";
 
     private final Channel channel;
@@ -58,15 +59,17 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
 
 	// -- Spout interface methods
 
-    public boolean sendMessage(String message) {
-        if (!NarwhalServerListener.checkDupeMessage(message)) {
+    public boolean sendMessage(Object... message) {
+        String messageStr = ChatStyle.stringify(IrcStyleHandler.ID, message);
+        if (!NarwhalServerListener.checkDupeMessage(messageStr)) {
             return false;
         }
-        return sendRawMessage(stripColor ? ChatColor.strip(message) : IrcColor.replaceColor(message, false));
+        channel.getBot().sendMessage(channel, stripColor ? ChatStyle.stringify(NoStyleHandler.ID, message) : messageStr);
+        return true;
     }
 
-    public boolean sendRawMessage(String message) {
-        channel.getBot().sendMessage(channel, message);
+    public boolean sendRawMessage(Object... message) {
+        channel.getBot().sendMessage(channel, ChatStyle.stringify(IrcStyleHandler.ID, message));
         return true;
     }
 

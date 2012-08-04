@@ -1,10 +1,13 @@
 package com.zachsthings.narwhal.irc;
 
 import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
-import com.zachsthings.narwhal.irc.chatstyle.NoStyleHandler;
 import org.pircbotx.Channel;
 import org.spout.api.Spout;
+import org.spout.api.chat.ChatArguments;
+import org.spout.api.chat.ChatTemplate;
+import org.spout.api.chat.Placeholder;
 import org.spout.api.chat.style.ChatStyle;
+import org.spout.api.command.Command;
 import org.spout.api.command.CommandSource;
 import org.spout.api.data.ValueHolder;
 import org.spout.api.data.ValueHolderBase;
@@ -21,18 +24,21 @@ import java.util.*;
  * There is one ChannelCommandSource per channel which handles broad
  */
 public class ChannelCommandSource extends AnnotatedConfiguration implements CommandSource {
+    public static final Placeholder NAME = new Placeholder("NAME"), CHANNEL = new Placeholder("CHANNEL"), MESSAGE = new Placeholder("MESSAGE"), EVENT = new Placeholder("EVENT");
 
 	@Setting("key") private String channelKey;
 	@Setting("permissions") private Map<String, Boolean> permissions = new HashMap<String, Boolean>();
 	@Setting("receive-events") private Set<PassedEvent> receiveEvents = new HashSet<PassedEvent>(Arrays.asList(PassedEvent.values()));
-    @Setting({"format", "irc-to-server"}) public List<Object> ircToServerFormat = "<%name%> %channel%: %msg%";
-    @Setting({"format", "server-to-irc"}) private String serverToIrcFormat = "%event%";
+    @Setting({"format", "irc-to-server"}) public ChatTemplate ircToServerFormat = new ChatTemplate(new ChatArguments("<", NAME, "> ", CHANNEL, ": ", MESSAGE));
+    @Setting({"format", "server-to-irc"}) private ChatTemplate serverToIrcFormat = new ChatTemplate(new ChatArguments(EVENT));
 
+    private final NarwhalIRCPlugin plugin;
     private final Channel channel;
     private boolean stripColor;
 
-    public ChannelCommandSource(Configuration config, Channel channel, boolean stripColor) {
+    public ChannelCommandSource(NarwhalIRCPlugin plugin, Configuration config, Channel channel, boolean stripColor) {
         super(config);
+        this.plugin = plugin;
         this.channel = channel;
         this.stripColor = stripColor;
     }
@@ -49,27 +55,52 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
         return channel;
     }
 
-    public String getIrcToServerFormat() {
+    public ChatTemplate getIrcToServerFormat() {
         return ircToServerFormat;
     }
 
-    public String getServerToIrcFormat() {
+    public ChatTemplate getServerToIrcFormat() {
         return serverToIrcFormat;
     }
 
 	// -- Spout interface methods
 
     public boolean sendMessage(Object... message) {
-        String messageStr = ChatStyle.stringify(IrcStyleHandler.ID, message);
+        return sendMessage(new ChatArguments(message));
+    }
+
+    public void sendCommand(String cmd, ChatArguments args) {
+        if (cmd.equalsIgnoreCase("say")) {
+            sendMessage(args);
+        } else {
+            processCommand(cmd, args);
+        }
+    }
+
+    public void processCommand(String cmdName, ChatArguments args) {
+        Command cmd = plugin.getBotCommands().getChild(cmdName);
+        if (cmd != null) {
+            cmd.process(this, cmdName, args, false);
+        } else {
+            sendMessage(ChatStyle.RED, "Unknown command: " + cmdName);
+        }
+    }
+
+    public boolean sendMessage(ChatArguments message) {
+        String messageStr = message.asString(IrcStyleHandler.ID);
         if (!NarwhalServerListener.checkDupeMessage(messageStr)) {
             return false;
         }
-        channel.getBot().sendMessage(channel, stripColor ? ChatStyle.stringify(NoStyleHandler.ID, message) : messageStr);
+        channel.getBot().sendMessage(channel, stripColor ? message.getPlainString() : messageStr);
         return true;
     }
 
     public boolean sendRawMessage(Object... message) {
-        channel.getBot().sendMessage(channel, ChatStyle.stringify(IrcStyleHandler.ID, message));
+        return sendRawMessage(new ChatArguments(message));
+    }
+
+    public boolean sendRawMessage(ChatArguments message) {
+        channel.getBot().sendMessage(channel, message.asString(IrcStyleHandler.ID));
         return true;
     }
 

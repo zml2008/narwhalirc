@@ -3,7 +3,8 @@ package com.zachsthings.narwhal.irc;
 import org.pircbotx.PircBotX;
 
 /**
- * @author zml2008
+ * Our subclass of {@link PircBotX} that fixes an issue where shutdown doesn't correctly
+ * stop the output thread
  */
 public class NarwhalBot extends PircBotX {
     public void shutdown() {

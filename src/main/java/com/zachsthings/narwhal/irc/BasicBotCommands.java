@@ -1,6 +1,7 @@
 package com.zachsthings.narwhal.irc;
 
 import org.spout.api.Spout;
+import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
 import org.spout.api.command.CommandSource;
@@ -8,9 +9,7 @@ import org.spout.api.command.annotated.Command;
 import org.spout.api.exception.CommandException;
 import org.spout.api.player.Player;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * @author zml2008
@@ -25,24 +24,23 @@ public class BasicBotCommands {
     @Command(aliases = {"players", "ply"},
             desc = "Return the online players")
     public void onlinePlayers(CommandContext args, BotCommandSource sender) throws CommandException {
-        List<Object> build = new ArrayList<Object>();
+        ChatArguments build = new ChatArguments();
         Player[] onlinePlayers = Spout.getEngine().getOnlinePlayers();
         if (onlinePlayers.length > 0) {
             for (Player player : onlinePlayers) {
-                if (build.size() == 0) {
-                    build.add("Online players: (");
-                    build.add(onlinePlayers.length);
-                    build.add("/");
-                    build.add(Spout.getEngine().getMaxPlayers());
-                    build.add("): ");
+                if (build.length() == 0) {
+                    build.append("Online players: (")
+                    .append(onlinePlayers.length)
+                    .append("/")
+                    .append(Spout.getEngine().getMaxPlayers())
+                    .append("): ");
                 } else {
-                    build.add(", ");
+                    build.append(", ");
                 }
-                build.add(player.getDisplayName());
-                build.add(ChatStyle.RESET);
+                build.append(player.getDisplayName()).append(ChatStyle.RESET);
             }
         } else {
-            build.add("No players online.");
+            build.append("No players online.");
         }
         sender.sendMessage(build);
     }
@@ -58,7 +56,7 @@ public class BasicBotCommands {
             desc = "Executes a command on the server. ",
             usage = "<command...>")
     public void exec(CommandContext args, BotCommandSource sender) throws CommandException {
-        Spout.getEngine().processCommand(sender, args.getJoinedString(0));
+        sender.processCommand(args.getString(0), args.getJoinedString(1));
     }
 
     /*@Command(aliases = "broadcastadmin", desc = "Broadcasts a message with narwhalirc.broadcast.admin", min = 1)
@@ -69,9 +67,9 @@ public class BasicBotCommands {
     @Command(aliases = "msg", desc = "Sends a message to a player on the server", usage = "<player> <message>", min = 2)
     public void msg(CommandContext args, BotCommandSource sender) throws CommandException {
         CommandSource target = matchSinglePlayer(args.getString(0));
-        target.sendMessage(ChatStyle.GRAY, "IRC-PM from ",  sender.getUser().getServer(),
+        target.sendMessage(ChatStyle.GRAY, "IRC-PM from ", sender.getUser().getServer(),
                 ":", sender.getName(), ": ", ChatStyle.RESET, args.getJoinedString(1));
-        sender.sendMessage("Message sent to " + target.getName());
+        sender.sendMessage("Message sent to ", target.getName());
     }
 
     public CommandSource matchSinglePlayer(String name) throws CommandException {

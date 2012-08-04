@@ -1,15 +1,13 @@
 package com.zachsthings.narwhal.irc;
 
+import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
+import com.zachsthings.narwhal.irc.util.NarwhalIRCUtil;
 import org.pircbotx.Channel;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.exception.IrcException;
-import org.spout.api.chat.style.ChatStyle;
-import org.spout.api.exception.CommandException;
-import org.spout.api.exception.CommandUsageException;
 import org.spout.api.exception.ConfigurationException;
-import org.spout.api.exception.WrappedCommandException;
 import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.MapConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
@@ -22,7 +20,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
-import static com.zachsthings.narwhal.irc.NarwhalIRCPlugin.getNestedMap;
+import static com.zachsthings.narwhal.irc.util.NarwhalIRCUtil.getNestedMap;
 
 /**
 * @author zml2008
@@ -107,7 +105,7 @@ public class BotSession extends AnnotatedConfiguration {
 
     public void joinChannels() {
         for (Entry<String, Map<?, ?>> entry : rawChannels.entrySet()) {
-            ChannelCommandSource source = new ChannelCommandSource(new MapConfiguration(entry.getValue()),
+            ChannelCommandSource source = new ChannelCommandSource(plugin, new MapConfiguration(entry.getValue()),
                     bot.getChannel(entry.getKey()), stripColor);
             try {
                 source.load();
@@ -155,7 +153,7 @@ public class BotSession extends AnnotatedConfiguration {
                 channel == null ? null : channel.getName());
         BotCommandSource source = inChannel.get(user.getNick());
         if (source == null) {
-            source = new BotCommandSource(user, channel, stripColor);
+            source = new BotCommandSource(plugin, user, channel, stripColor);
             inChannel.put(user.getNick(), source);
         }
         return source;
@@ -187,28 +185,12 @@ public class BotSession extends AnnotatedConfiguration {
      *
      * @param user The User who sent the command
      * @param channel The Channel this command came from
-     * @param args The arguments for the command
+     * @param rawCmd The arguments for the command
      * @return whether the command could be found.
      */
-    public boolean handleCommand(User user, Channel channel, String[] args) {
+    public boolean handleCommand(User user, Channel channel, String rawCmd) {
         BotCommandSource source = getCommandSource(user, channel);
-        if (!plugin.getBotCommands().hasChild(args[0])) return false;
-        try {
-            plugin.getBotCommands().execute(source, args, -1, false);
-        } catch (CommandUsageException e) {
-            source.sendMessage(ChatStyle.RED, e.getMessage());
-            source.sendMessage(ChatStyle.RED, e.getUsage());
-        } catch (WrappedCommandException e) {
-            if (e.getCause() instanceof NumberFormatException) {
-                source.sendMessage(ChatStyle.RED, "Number expected, string received instead.");
-            } else {
-                source.sendMessage(ChatStyle.RED, "An error has occurred. See console.");
-                e.printStackTrace();
-            }
-        } catch (CommandException e) {
-            source.sendMessage(ChatStyle.RED, e.getMessage());
-        }
-        return true;
+        return NarwhalIRCUtil.handleCommand(source, rawCmd, IrcStyleHandler.ID, plugin.getBotCommands());
     }
 
 }

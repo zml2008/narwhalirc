@@ -6,6 +6,7 @@ import org.pircbotx.hooks.Listener;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.*;
 import org.spout.api.Spout;
+import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.scheduler.TaskPriority;
 
@@ -26,16 +27,16 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     @Override
     public void onMessage(MessageEvent<PircBotX> event) {
         if (event.getMessage().startsWith(plugin.getCommandPrefix())) {
-            String[] commandSplit = event.getMessage().split(" ");
-            commandSplit[0] = commandSplit[0].substring(plugin.getCommandPrefix().length());
-            session.handleCommand(event.getUser(), event.getChannel(), commandSplit);
+            session.handleCommand(event.getUser(), event.getChannel(), event.getMessage().substring(plugin.getCommandPrefix().length()));
         } else {
             ChannelCommandSource source = session.getChannel(event.getChannel().getName());
             if (source != null) {
-                Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, source.getIrcToServerFormat()
-                        .replaceAll("%name%", Matcher.quoteReplacement(event.getUser().getNick()))
-                        .replaceAll("%channel%", Matcher.quoteReplacement(event.getChannel().getName()))
-                        .replaceAll("%msg%", Matcher.quoteReplacement(IrcStyleHandler.INSTANCE.fromString(event.getMessage()))));
+                ChatArguments args = source.getServerToIrcFormat().getArguments();
+                args.setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getUser().getNick()));
+                args.setPlaceHolder(ChannelCommandSource.CHANNEL, new ChatArguments(event.getChannel().getName()));
+                args.setPlaceHolder(ChannelCommandSource.MESSAGE, ChatArguments.fromString(event.getMessage(), IrcStyleHandler.ID));
+
+                Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, args);
             }
         }
     }
@@ -43,9 +44,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     @Override
     public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
         if (event.getMessage().startsWith(plugin.getCommandPrefix())) {
-            String[] commandSplit = event.getMessage().split(" ");
-            commandSplit[0] = commandSplit[0].substring(plugin.getCommandPrefix().length());
-            session.handleCommand(event.getUser(), null, commandSplit);
+            session.handleCommand(event.getUser(), null, event.getMessage().substring(plugin.getCommandPrefix().length()));
         } else {
             event.getBot().sendMessage(event.getUser(),
                     "I'm a teapot! Ask the server admin if I am short or stout.");

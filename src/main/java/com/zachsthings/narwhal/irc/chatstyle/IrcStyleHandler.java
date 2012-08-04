@@ -1,6 +1,7 @@
 package com.zachsthings.narwhal.irc.chatstyle;
 
 import org.pircbotx.Colors;
+import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.chat.style.StyleFormatter;
 import org.spout.api.chat.style.StyleHandler;
@@ -57,10 +58,10 @@ public class IrcStyleHandler extends StyleHandler {
 
     private static final Pattern IRC_COLOR_PATTERN = Pattern.compile("\u0003(\\d\\d)");
 
-    public Object[] fromString(String message) {
+    public ChatArguments extractArguments(String message) {
         List<Object> items = new ArrayList<Object>();
         addItems(items,  message);
-        return items.toArray();
+        return new ChatArguments(items);
     }
 
     private void addItems(List<Object> items, String message) {

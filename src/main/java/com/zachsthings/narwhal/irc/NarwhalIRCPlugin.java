@@ -1,7 +1,9 @@
 package com.zachsthings.narwhal.irc;
 
+import com.zachsthings.narwhal.irc.util.ChatTemplateSerializer;
 import org.pircbotx.Channel;
 import org.spout.api.Spout;
+import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
 import org.spout.api.command.CommandSource;
@@ -14,6 +16,7 @@ import org.spout.api.plugin.CommonPlugin;
 import org.spout.api.util.config.MapConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.Setting;
+import org.spout.api.util.config.serialization.Serialization;
 import org.spout.api.util.config.yaml.YamlConfiguration;
 
 import java.io.File;
@@ -22,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
- * @author zml2008
+ * Main class for NarwhalIRC
  */
 public class NarwhalIRCPlugin extends CommonPlugin {
 
@@ -36,7 +39,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
      */
     public static final Set<String> BLACKLISTED_BOT_PERMS =
             Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
-                    IRC_BROADCAST_PERMISSION)));
+                    IRC_BROADCAST_PERMISSION, "spout.chat.receive.*")));
 
     private LocalConfiguration config;
 
@@ -52,11 +55,11 @@ public class NarwhalIRCPlugin extends CommonPlugin {
      * The AnnotatedCommandRegistrationFactory
      */
     private final AnnotatedCommandRegistrationFactory commandRegistration =
-            new AnnotatedCommandRegistrationFactory(new SimpleInjector(this),
-            new SimpleAnnotatedCommandExecutorFactory());
+            new AnnotatedCommandRegistrationFactory(new SimpleInjector(this));
 
     @Override
     public void onEnable() {
+        Serialization.registerSerializer(new ChatTemplateSerializer());
         try {
             loadConfig();
         } catch (ConfigurationException e) {
@@ -127,7 +130,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
      * @param type The type of message being passed
      * @param message The message to broadcast
      */
-    public void broadcastBotMessage(PassedEvent type, Object... message) {
+    public void broadcastBotMessage(PassedEvent type, ChatArguments message) {
         for (BotSession bot : bots.values()) {
 			for (ChannelCommandSource chan : bot.getChannels()) {
 				if (chan.receivesEvent(type)) {
@@ -187,30 +190,20 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         @CommandPermissions("narwhal.irc.channels")
         public void channels(CommandContext args, CommandSource sender) throws CommandException {
             for (BotSession bot : bots.values()) {
-                List<Object> builder = new ArrayList<Object>();
-                builder.add(ChatStyle.BLUE);
-                builder.add(bot.getServer());
-                builder.add(": ");
+                ChatArguments builder = new ChatArguments();
+                builder.append(ChatStyle.BLUE).append(bot.getServer()).append(": ");
                 for (Iterator<ChannelCommandSource> i = bot.getChannels().iterator(); i.hasNext(); ) {
                     final Channel chan = i.next().getChannel();
-                    builder.add(chan.getChannelKey() == null ? "" : "+");
-                    builder.add(chan.getName());
+                    if (chan.getChannelKey() != null) {
+                        builder.append("+");
+                    }
+                    builder.append(chan.getName());
                     if (i.hasNext()) {
-                        builder.add(", ");
+                        builder.append(", ");
                     }
                 }
                 sender.sendMessage(builder);
             }
         }
     }
-
-    public static <T, K, V> Map<K, V> getNestedMap(Map<T, Map<K, V>> collection, T key) {
-        Map<K, V> map = collection.get(key);
-        if (map == null) {
-            map = new HashMap<K, V>();
-            collection.put(key, map);
-        }
-        return map;
-    }
-
 }

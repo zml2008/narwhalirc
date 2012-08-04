@@ -1,5 +1,7 @@
 package com.zachsthings.narwhal.irc;
 
+import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
+import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.event.EventHandler;
 import org.spout.api.event.Listener;
@@ -11,12 +13,8 @@ import org.spout.api.event.player.PlayerKickEvent;
 import org.spout.api.event.player.PlayerLeaveEvent;
 import org.spout.api.event.server.permissions.PermissionGetAllWithNodeEvent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
 
 public class NarwhalServerListener implements Listener {
     private static final Map<String, Integer> dupeMessages = new HashMap<String, Integer>();
@@ -56,16 +54,17 @@ public class NarwhalServerListener implements Listener {
         if (event.isCancelled()) {
             return;
         }
-        addDupeMessage(PassedEvent.MESSAGE, String.format(event.getFormat(), event.getPlayer().getDisplayName(),  event.getMessage()));
 
         for (BotSession bot : plugin.getBots()) {
             for (ChannelCommandSource chan : bot.getChannels()) {
                 if (chan.receivesEvent(PassedEvent.MESSAGE)) {
-                    chan.sendMessage(chan.getServerToIrcFormat().
-                            replaceAll("%event%", Matcher.quoteReplacement(String.format(event.getFormat(),
-                                    event.getPlayer().getDisplayName(), event.getMessage())))
-                            .replaceAll("%name%", Matcher.quoteReplacement(event.getPlayer().getDisplayName()))
-                            .replaceAll("%msg%", Matcher.quoteReplacement(event.getMessage())));
+                    ChatArguments args = chan.getServerToIrcFormat().getArguments();
+                    args.setPlaceHolder(ChannelCommandSource.EVENT,
+                            event.getFormat().getArguments()
+                                    .setPlaceHolder(PlayerChatEvent.NAME, new ChatArguments(event.getPlayer().getDisplayName()))
+                                    .setPlaceHolder(PlayerChatEvent.MESSAGE, event.getMessage()))
+                            .setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getPlayer().getDisplayName()))
+                            .setPlaceHolder(ChannelCommandSource.MESSAGE, event.getMessage());
                 }
             }
         }
@@ -76,12 +75,9 @@ public class NarwhalServerListener implements Listener {
         if (event.getMessage() == null) {
             return;
         }
-        addDupeMessage(PassedEvent.JOIN, event.getMessage());
-        List<Object> items = new ArrayList<Object>();
-        items.add("[");
-        items.addAll(Arrays.asList(event.getMessage()));
-        items.add(ChatStyle.RESET);
-        items.add("]");
+        addDupeMessage(PassedEvent.JOIN, new ChatArguments(event.getMessage()).asString(IrcStyleHandler.ID));
+        ChatArguments items = new ChatArguments();
+        items.append("[").append(event.getMessage()).append(ChatStyle.RESET).append("]");
         plugin.broadcastBotMessage(PassedEvent.JOIN, items);
     }
 
@@ -91,20 +87,24 @@ public class NarwhalServerListener implements Listener {
             return;
         }
         final PassedEvent passedEvent = event instanceof PlayerKickEvent ? PassedEvent.KICK : PassedEvent.QUIT;
-        addDupeMessage(passedEvent, ChatStyle.stringify(event.getMessage()));
-        List<Object> items = new ArrayList<Object>();
-        items.add("[");
-        items.addAll(Arrays.asList(event.getMessage()));
-        items.add(ChatStyle.RESET);
-        items.add("]");
+        addDupeMessage(passedEvent, new ChatArguments(event.getMessage()).asString(IrcStyleHandler.ID));
+        ChatArguments items = new ChatArguments();
+        items.append("[").append(event.getMessage()).append(ChatStyle.RESET).append("]");
         plugin.broadcastBotMessage(passedEvent, items);
     }
 
     @EventHandler(order = Order.EARLIEST)
     public void onGetAllWithNode(PermissionGetAllWithNodeEvent event) {
+        boolean blacklisted = false;
+        for (String node : event.getNodes()) {
+            if (NarwhalIRCPlugin.BLACKLISTED_BOT_PERMS.contains(node)) {
+                blacklisted = true;
+                break;
+            }
+        }
         for (BotSession bot : plugin.getBots()) {
             channels: for (ChannelCommandSource channel : bot.getChannels()) {
-                if (NarwhalIRCPlugin.BLACKLISTED_BOT_PERMS.contains(event.getNode())) {
+                if (blacklisted) {
                     event.getReceivers().put(channel, Result.DENY);
                     continue;
                 }

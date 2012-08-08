@@ -1,6 +1,7 @@
 package com.zachsthings.narwhal.irc;
 
 import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
+import com.zachsthings.narwhal.irc.util.NarwhalIRCUtil;
 import org.pircbotx.Channel;
 import org.pircbotx.User;
 import org.spout.api.chat.ChatArguments;
@@ -50,12 +51,14 @@ public class BotCommandSource implements CommandSource {
     }
 
     public void processCommand(String cmdName, ChatArguments args) {
+        NarwhalIRCUtil.handleCommand(this, cmdName, args);
+        /*
         Command cmd = plugin.getBotCommands().getChild(cmdName);
         if (cmd != null) {
             cmd.process(this, cmdName, args, false);
         } else {
             sendMessage(ChatStyle.RED, "Unknown command: " + cmdName);
-        }
+        }*/
     }
 
     public boolean sendMessage(ChatArguments message) {

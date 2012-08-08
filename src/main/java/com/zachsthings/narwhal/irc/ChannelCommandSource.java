@@ -2,7 +2,6 @@ package com.zachsthings.narwhal.irc;
 
 import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
 import org.pircbotx.Channel;
-import org.spout.api.Spout;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.ChatTemplate;
 import org.spout.api.chat.Placeholder;
@@ -48,6 +47,7 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
 	}
 
 	public boolean receivesEvent(PassedEvent event) {
+        System.out.println(receiveEvents);
 		return receiveEvents.contains(event);
 	}
 
@@ -130,7 +130,7 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
                 break;
             }
         }
-        Spout.getEventManager().callEvent(event);
+        plugin.getEngine().getEventManager().callEvent(event);
         return event.getResult() == Result.ALLOW;
     }
 

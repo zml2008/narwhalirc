@@ -2,7 +2,6 @@ package com.zachsthings.narwhal.irc;
 
 import com.zachsthings.narwhal.irc.util.ChatTemplateSerializer;
 import org.pircbotx.Channel;
-import org.spout.api.Spout;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
@@ -39,7 +38,9 @@ public class NarwhalIRCPlugin extends CommonPlugin {
      */
     public static final Set<String> BLACKLISTED_BOT_PERMS =
             Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
-                    IRC_BROADCAST_PERMISSION, "spout.chat.receive.*")));
+                    IRC_BROADCAST_PERMISSION,
+                    "spout.chat.receive.*",
+                    "-spout.chat.receive.console")));
 
     private LocalConfiguration config;
 
@@ -49,7 +50,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     /**
      * The commands available for bots.
      */
-    private RootCommand botCommands = new RootCommand(Spout.getEngine());
+    private RootCommand botCommands;
 
     /**
      * The AnnotatedCommandRegistrationFactory
@@ -59,6 +60,8 @@ public class NarwhalIRCPlugin extends CommonPlugin {
 
     @Override
     public void onEnable() {
+        botCommands = new RootCommand(getEngine());
+        config = new LocalConfiguration(new File(getDataFolder(), "config.yml"));
         Serialization.registerSerializer(new ChatTemplateSerializer());
         try {
             loadConfig();
@@ -66,8 +69,8 @@ public class NarwhalIRCPlugin extends CommonPlugin {
             getLogger().log(Level.SEVERE, "Unable to load configuration for plugin: " + e.getMessage(), e);
         }
         DefaultPermissions.addDefaultPermission(IRC_BROADCAST_PERMISSION);
-        Spout.getEngine().getRootCommand().addSubCommands(this, Commands.class, commandRegistration);
-        Spout.getEventManager().registerEvents(new NarwhalServerListener(this), this);
+        getEngine().getRootCommand().addSubCommands(this, Commands.class, commandRegistration);
+        getEngine().getEventManager().registerEvents(new NarwhalServerListener(this), this);
         botCommands.addSubCommands(this, BasicBotCommands.class, commandRegistration);
     }
 
@@ -112,7 +115,6 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     }
 
     protected void loadConfig() throws ConfigurationException{
-        config = new LocalConfiguration(new File(getDataFolder(), "config.yml"));
         config.load();
         for (Map.Entry<String, Map<?, ?>> entry : config.serverMap.entrySet()) {
             BotSession bot = new BotSession(new MapConfiguration(entry.getValue()), entry.getKey(), this);

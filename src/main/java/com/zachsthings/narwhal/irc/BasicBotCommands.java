@@ -1,6 +1,5 @@
 package com.zachsthings.narwhal.irc;
 
-import org.spout.api.Spout;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
@@ -25,14 +24,14 @@ public class BasicBotCommands {
             desc = "Return the online players")
     public void onlinePlayers(CommandContext args, BotCommandSource sender) throws CommandException {
         ChatArguments build = new ChatArguments();
-        Player[] onlinePlayers = Spout.getEngine().getOnlinePlayers();
+        Player[] onlinePlayers = plugin.getEngine().getOnlinePlayers();
         if (onlinePlayers.length > 0) {
             for (Player player : onlinePlayers) {
                 if (build.length() == 0) {
                     build.append("Online players: (")
                     .append(onlinePlayers.length)
                     .append("/")
-                    .append(Spout.getEngine().getMaxPlayers())
+                    .append(plugin.getEngine().getMaxPlayers())
                     .append("): ");
                 } else {
                     build.append(", ");
@@ -54,9 +53,13 @@ public class BasicBotCommands {
 
     @Command(aliases = {"exec"}, //anyFlags = true,
             desc = "Executes a command on the server. ",
-            usage = "<command...>")
+            usage = "<command...>", min = 1, max = -1)
     public void exec(CommandContext args, BotCommandSource sender) throws CommandException {
-        sender.processCommand(args.getString(0), args.getJoinedString(1));
+        if (args.length() == 1) {
+            sender.processCommand(args.getString(0), new ChatArguments());
+        } else {
+            sender.processCommand(args.getString(0), args.getJoinedString(1));
+        }
     }
 
     /*@Command(aliases = "broadcastadmin", desc = "Broadcasts a message with narwhalirc.broadcast.admin", min = 1)
@@ -73,7 +76,7 @@ public class BasicBotCommands {
     }
 
     public CommandSource matchSinglePlayer(String name) throws CommandException {
-        Collection<Player> players = Spout.getEngine().matchPlayer(name);
+        Collection<Player> players = plugin.getEngine().matchPlayer(name);
         if (players.size() == 0) {
             throw new CommandException("No players matched " + name + "!");
         }

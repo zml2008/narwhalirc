@@ -55,12 +55,14 @@ public class NarwhalIRCUtil {
         return fromString(pattern, DefaultStyleHandler.ID);
     }
 
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("([^\\{]+)(\\{[^{].*\\})?");
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("((?:[^\\{]|\\{\\{)*)(?:\\{([^{][^}]*)\\})?");
     public static ChatTemplate fromString(String pattern, int styleHandlerId) {
         ChatArguments args = new ChatArguments();
         Matcher matcher = PLACEHOLDER_PATTERN.matcher(pattern);
         while (matcher.find()) {
-            args.append(ChatArguments.fromString(matcher.group(1), styleHandlerId));
+            if (matcher.group(1).length() > 0) {
+                args.append(ChatArguments.fromString(matcher.group(1), styleHandlerId));
+            }
             if (matcher.group(2) != null) {
                 args.append(new Placeholder(matcher.group(2).toUpperCase()));
             }
@@ -75,5 +77,19 @@ public class NarwhalIRCUtil {
             collection.put(key, map);
         }
         return map;
+    }
+
+    public static String toTemplateString(ChatArguments arguments) {
+        StringBuilder builder = new StringBuilder();
+        for (Object element : arguments.getArguments()) {
+            if (element instanceof ChatStyle) {
+                builder.append("{{").append(((ChatStyle) element).getName()).append("}}");
+            } else if (element instanceof Placeholder) {
+                builder.append('{').append(((Placeholder) element).getName()).append('}');
+            } else {
+                builder.append(element);
+            }
+        }
+        return builder.toString();
     }
 }

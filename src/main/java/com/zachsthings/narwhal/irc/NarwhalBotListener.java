@@ -5,7 +5,6 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.hooks.Listener;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.*;
-import org.spout.api.Spout;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.scheduler.TaskPriority;
@@ -13,7 +12,7 @@ import org.spout.api.scheduler.TaskPriority;
 import java.util.regex.Matcher;
 
 /**
- * @author zml2008
+ * Listener for events coming from a NarwhalBot instance
  */
 public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Listener<PircBotX> {
     private final BotSession session;
@@ -31,12 +30,13 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             ChannelCommandSource source = session.getChannel(event.getChannel().getName());
             if (source != null) {
-                ChatArguments args = source.getServerToIrcFormat().getArguments();
-                args.setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getUser().getNick()));
-                args.setPlaceHolder(ChannelCommandSource.CHANNEL, new ChatArguments(event.getChannel().getName()));
-                args.setPlaceHolder(ChannelCommandSource.MESSAGE, ChatArguments.fromString(event.getMessage(), IrcStyleHandler.ID));
+                System.out.println("Passing message: " + event.getMessage() + " to server!");
+                ChatArguments args = source.getIrcToServerFormat().getArguments();
+                if (args.hasPlaceholder(ChannelCommandSource.NAME)) args.setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getUser().getNick()));
+                if (args.hasPlaceholder(ChannelCommandSource.CHANNEL)) args.setPlaceHolder(ChannelCommandSource.CHANNEL, new ChatArguments(event.getChannel().getName()));
+                if (args.hasPlaceholder(ChannelCommandSource.MESSAGE)) args.setPlaceHolder(ChannelCommandSource.MESSAGE, ChatArguments.fromString(event.getMessage(), IrcStyleHandler.ID));
 
-                Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, args);
+                plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, args);
             }
         }
     }
@@ -54,7 +54,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     @Override
     public void onJoin(JoinEvent<PircBotX> event) {
         if (event.getUser().getNick().equals(event.getBot().getNick())) return;
-        Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
+        plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
                 " has joined ", event.getChannel().getName());
     }
 
@@ -69,7 +69,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             message = ": " + event.getReason();
         }
-        Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
+        plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
                 " has left ", event.getChannel().getName(), message);
     }
 
@@ -85,14 +85,14 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             message = ": " + event.getReason();
         }
-        Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE,
+        plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE,
                 event.getUser().getNick(), " has left IRC", message);
     }
 
     @Override
     public void onKick(final KickEvent<PircBotX> event) {
         if (event.getRecipient().getNick().equals(event.getBot().getNick())) {
-            Spout.getEngine().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+            plugin.getEngine().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                 public void run() {
                     event.getBot().joinChannel(event.getChannel().getName());
                 }
@@ -105,7 +105,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     @Override
     public void onAction(ActionEvent<PircBotX> event) {
         if (!event.getUser().getNick().equals(event.getBot().getNick())) {
-            Spout.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, event.getChannel().getName(), ": * ", event.getUser().getNick(), " ", event.getAction());
+            plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, event.getChannel().getName(), ": * ", event.getUser().getNick(), " ", event.getAction());
         }
     }
 

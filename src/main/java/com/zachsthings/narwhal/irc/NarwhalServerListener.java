@@ -59,12 +59,13 @@ public class NarwhalServerListener implements Listener {
             for (ChannelCommandSource chan : bot.getChannels()) {
                 if (chan.receivesEvent(PassedEvent.MESSAGE)) {
                     ChatArguments args = chan.getServerToIrcFormat().getArguments();
-                    args.setPlaceHolder(ChannelCommandSource.EVENT,
+                    if (args.hasPlaceholder(ChannelCommandSource.EVENT)) args.setPlaceHolder(ChannelCommandSource.EVENT,
                             event.getFormat().getArguments()
                                     .setPlaceHolder(PlayerChatEvent.NAME, new ChatArguments(event.getPlayer().getDisplayName()))
-                                    .setPlaceHolder(PlayerChatEvent.MESSAGE, event.getMessage()))
-                            .setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getPlayer().getDisplayName()))
-                            .setPlaceHolder(ChannelCommandSource.MESSAGE, event.getMessage());
+                                    .setPlaceHolder(PlayerChatEvent.MESSAGE, event.getMessage()));
+                    if (args.hasPlaceholder(ChannelCommandSource.NAME)) args.setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getPlayer().getDisplayName()));
+                    if (args.hasPlaceholder(ChannelCommandSource.MESSAGE)) args.setPlaceHolder(ChannelCommandSource.MESSAGE, event.getMessage());
+                    chan.sendMessage(args);
                 }
             }
         }
@@ -100,8 +101,12 @@ public class NarwhalServerListener implements Listener {
             if (NarwhalIRCPlugin.BLACKLISTED_BOT_PERMS.contains(node)) {
                 blacklisted = true;
                 break;
+            } else if (NarwhalIRCPlugin.BLACKLISTED_BOT_PERMS.contains("-" + node)) {
+                blacklisted = false;
+                break;
             }
         }
+
         for (BotSession bot : plugin.getBots()) {
             channels: for (ChannelCommandSource channel : bot.getChannels()) {
                 if (blacklisted) {

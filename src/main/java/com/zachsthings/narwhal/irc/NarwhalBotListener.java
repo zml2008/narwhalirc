@@ -30,7 +30,6 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             ChannelCommandSource source = session.getChannel(event.getChannel().getName());
             if (source != null) {
-                System.out.println("Passing message: " + event.getMessage() + " to server!");
                 ChatArguments args = source.getIrcToServerFormat().getArguments();
                 if (args.hasPlaceholder(ChannelCommandSource.NAME)) args.setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getUser().getNick()));
                 if (args.hasPlaceholder(ChannelCommandSource.CHANNEL)) args.setPlaceHolder(ChannelCommandSource.CHANNEL, new ChatArguments(event.getChannel().getName()));

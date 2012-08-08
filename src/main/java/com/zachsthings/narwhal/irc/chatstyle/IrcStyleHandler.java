@@ -6,10 +6,7 @@ import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.chat.style.StyleFormatter;
 import org.spout.api.chat.style.StyleHandler;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,6 +15,7 @@ import java.util.regex.Pattern;
  */
 public class IrcStyleHandler extends StyleHandler {
     public static final IrcStyleHandler INSTANCE = new IrcStyleHandler();
+    public static final String ITALIC_CODE = "\29";
     private final Map<String, ChatStyle> reverseMapping = new HashMap<String, ChatStyle>();
     public static final int ID = register(INSTANCE);
 
@@ -64,37 +62,37 @@ public class IrcStyleHandler extends StyleHandler {
         return new ChatArguments(items);
     }
 
-    private void addItems(List<Object> items, String message) {
+    private String handleDirectString(List<Object> items, String origStyle, ChatStyle replaceStyle, String message) {
         int index;
-        while ((index = message.indexOf(Colors.BOLD)) != -1) {
+        while ((index = message.indexOf(origStyle)) != -1) {
             String section = message.substring(0, index);
             addItems(items, section);
-            items.add(ChatStyle.BOLD);
-            message = message.substring(index);
+            if (index + origStyle.length() == message.length()) {
+                return "";
+            }
+            items.add(replaceStyle);
+            message = message.substring(index + origStyle.length());
         }
-        while ((index = message.indexOf(Colors.NORMAL)) != -1) {
-            String section = message.substring(0, index);
-            addItems(items, section);
-            items.add(ChatStyle.RESET);
-            message = message.substring(index);
-        }
-        while ((index = message.indexOf(Colors.UNDERLINE)) != -1) {
-            String section = message.substring(0, index);
-            addItems(items, section);
-            items.add(ChatStyle.UNDERLINE);
-            message = message.substring(index);
-        }
+        return message;
+    }
+
+    private void addItems(List<Object> items, String message) {
+        message = handleDirectString(items, Colors.BOLD, ChatStyle.BOLD, message);
+        message = handleDirectString(items, Colors.NORMAL, ChatStyle.RESET, message);
+        message = handleDirectString(items, Colors.UNDERLINE, ChatStyle.UNDERLINE, message);
+        message = handleDirectString(items, ITALIC_CODE, ChatStyle.ITALIC, message);
+
         Matcher match = IRC_COLOR_PATTERN.matcher(message);
         while (match.find()) {
             ChatStyle reverse = reverseMapping.get(match.group(0));
-            String section = message.substring(0, match.regionStart());
+            String section = message.substring(0, match.start());
             addItems(items, section);
             if (reverse != null) {
                 items.add(reverse);
             }
-            message = message.substring(match.start());
+            message = message.substring(match.end());
         }
-        items.add(message);
+        items.add(message.replace("\03", ""));
     }
 
     @Override

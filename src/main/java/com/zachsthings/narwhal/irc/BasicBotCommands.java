@@ -6,7 +6,7 @@ import org.spout.api.command.CommandContext;
 import org.spout.api.command.CommandSource;
 import org.spout.api.command.annotated.Command;
 import org.spout.api.exception.CommandException;
-import org.spout.api.player.Player;
+import org.spout.api.entity.Player;
 
 import java.util.Collection;
 

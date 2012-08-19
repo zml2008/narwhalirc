@@ -13,6 +13,8 @@ import org.spout.api.data.ValueHolderBase;
 import org.spout.api.event.Result;
 import org.spout.api.event.server.permissions.PermissionNodeEvent;
 import org.spout.api.geo.World;
+import org.spout.api.lang.*;
+import org.spout.api.lang.Locale;
 import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.Setting;
@@ -47,7 +49,6 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
 	}
 
 	public boolean receivesEvent(PassedEvent event) {
-        System.out.println(receiveEvents);
 		return receiveEvents.contains(event);
 	}
 
@@ -102,6 +103,10 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
     public boolean sendRawMessage(ChatArguments message) {
         channel.getBot().sendMessage(channel, message.asString(IrcStyleHandler.ID));
         return true;
+    }
+
+    public Locale getPreferredLocale() {
+        return Locale.ENGLISH_US;
     }
 
     public String getName() {

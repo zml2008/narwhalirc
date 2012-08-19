@@ -1,6 +1,7 @@
 package com.zachsthings.narwhal.irc;
 
 import com.zachsthings.narwhal.irc.util.ChatTemplateSerializer;
+import com.zachsthings.narwhal.irc.util.FormatConfigurationMigrator;
 import org.pircbotx.Channel;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
@@ -15,6 +16,7 @@ import org.spout.api.plugin.CommonPlugin;
 import org.spout.api.util.config.MapConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.Setting;
+import org.spout.api.util.config.migration.MigrationException;
 import org.spout.api.util.config.serialization.Serialization;
 import org.spout.api.util.config.yaml.YamlConfiguration;
 
@@ -114,8 +116,15 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         }
     }
 
-    protected void loadConfig() throws ConfigurationException{
+    protected void loadConfig() throws ConfigurationException {
         config.load();
+        FormatConfigurationMigrator migrator = new FormatConfigurationMigrator(config);
+        try {
+            migrator.migrate();
+        } catch (MigrationException e) {
+            getLogger().log(Level.SEVERE, "Could not migrate NarwhalIRC configuration to new format", e);
+            return;
+        }
         for (Map.Entry<String, Map<?, ?>> entry : config.serverMap.entrySet()) {
             BotSession bot = new BotSession(new MapConfiguration(entry.getValue()), entry.getKey(), this);
             bot.load();

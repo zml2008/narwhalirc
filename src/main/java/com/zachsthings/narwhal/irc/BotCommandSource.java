@@ -11,6 +11,7 @@ import org.spout.api.command.CommandSource;
 import org.spout.api.data.ValueHolder;
 import org.spout.api.data.ValueHolderBase;
 import org.spout.api.geo.World;
+import org.spout.api.lang.Locale;
 
 /**
  * This is a CommandSender implementation for users in an IRC channel.
@@ -82,6 +83,10 @@ public class BotCommandSource implements CommandSource {
             user.getBot().sendMessage(channel, message.asString(IrcStyleHandler.ID));
         }
         return true;
+    }
+
+    public Locale getPreferredLocale() {
+        return Locale.ENGLISH_US;
     }
 
     public String getName() {

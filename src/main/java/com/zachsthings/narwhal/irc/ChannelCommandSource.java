@@ -13,7 +13,6 @@ import org.spout.api.data.ValueHolderBase;
 import org.spout.api.event.Result;
 import org.spout.api.event.server.permissions.PermissionNodeEvent;
 import org.spout.api.geo.World;
-import org.spout.api.lang.*;
 import org.spout.api.lang.Locale;
 import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;

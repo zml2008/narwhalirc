@@ -5,8 +5,6 @@ import com.zachsthings.narwhal.irc.util.NarwhalIRCUtil;
 import org.pircbotx.Channel;
 import org.pircbotx.User;
 import org.spout.api.chat.ChatArguments;
-import org.spout.api.chat.style.ChatStyle;
-import org.spout.api.command.Command;
 import org.spout.api.command.CommandSource;
 import org.spout.api.data.ValueHolder;
 import org.spout.api.data.ValueHolderBase;

@@ -1,6 +1,5 @@
 package com.zachsthings.narwhal.irc;
 
-import org.spout.api.Server;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;

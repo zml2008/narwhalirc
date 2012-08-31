@@ -9,8 +9,6 @@ import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.scheduler.TaskPriority;
 
-import java.util.regex.Matcher;
-
 /**
  * Listener for events coming from a NarwhalBot instance
  */

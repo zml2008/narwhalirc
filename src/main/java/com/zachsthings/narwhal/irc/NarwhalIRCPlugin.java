@@ -3,6 +3,7 @@ package com.zachsthings.narwhal.irc;
 import com.zachsthings.narwhal.irc.util.ChatTemplateSerializer;
 import com.zachsthings.narwhal.irc.util.FormatConfigurationMigrator;
 import org.pircbotx.Channel;
+import org.spout.api.Server;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
@@ -54,6 +55,8 @@ public class NarwhalIRCPlugin extends CommonPlugin {
      */
     private RootCommand botCommands;
 
+    private Server server;
+
     /**
      * The AnnotatedCommandRegistrationFactory
      */
@@ -62,6 +65,11 @@ public class NarwhalIRCPlugin extends CommonPlugin {
 
     @Override
     public void onEnable() {
+        if (!(getEngine() instanceof Server)) {
+            throw new IllegalStateException("NarwhalIRC can only run on servers!");
+        }
+        this.server = (Server) getEngine();
+
         botCommands = new RootCommand(getEngine());
         config = new LocalConfiguration(new File(getDataFolder(), "config.yml"));
         Serialization.registerSerializer(new ChatTemplateSerializer());
@@ -97,6 +105,10 @@ public class NarwhalIRCPlugin extends CommonPlugin {
             bot.quit("Disabling", true);
         }
         bots.clear();
+    }
+
+    public Server getServer() {
+        return server;
     }
 
     private class LocalConfiguration extends AnnotatedConfiguration {

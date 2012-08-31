@@ -1,5 +1,6 @@
 package com.zachsthings.narwhal.irc;
 
+import org.spout.api.Server;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
@@ -24,14 +25,14 @@ public class BasicBotCommands {
             desc = "Return the online players")
     public void onlinePlayers(CommandContext args, BotCommandSource sender) throws CommandException {
         ChatArguments build = new ChatArguments();
-        Player[] onlinePlayers = plugin.getEngine().getOnlinePlayers();
+        Player[] onlinePlayers = plugin.getServer().getOnlinePlayers();
         if (onlinePlayers.length > 0) {
             for (Player player : onlinePlayers) {
                 if (build.length() == 0) {
                     build.append("Online players: (")
                     .append(onlinePlayers.length)
                     .append("/")
-                    .append(plugin.getEngine().getMaxPlayers())
+                    .append(plugin.getServer().getMaxPlayers())
                     .append("): ");
                 } else {
                     build.append(", ");
@@ -76,7 +77,7 @@ public class BasicBotCommands {
     }
 
     public CommandSource matchSinglePlayer(String name) throws CommandException {
-        Collection<Player> players = plugin.getEngine().matchPlayer(name);
+        Collection<Player> players = plugin.getServer().matchPlayer(name);
         if (players.size() == 0) {
             throw new CommandException("No players matched " + name + "!");
         }

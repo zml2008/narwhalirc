@@ -35,7 +35,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
                 if (args.hasPlaceholder(ChannelCommandSource.CHANNEL)) args.setPlaceHolder(ChannelCommandSource.CHANNEL, new ChatArguments(event.getChannel().getName()));
                 if (args.hasPlaceholder(ChannelCommandSource.MESSAGE)) args.setPlaceHolder(ChannelCommandSource.MESSAGE, ChatArguments.fromString(event.getMessage(), IrcStyleHandler.ID));
 
-                plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, args);
+                plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, args);
             }
         }
     }
@@ -53,7 +53,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     @Override
     public void onJoin(JoinEvent<PircBotX> event) {
         if (event.getUser().getNick().equals(event.getBot().getNick())) return;
-        plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
+        plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
                 " has joined ", event.getChannel().getName());
     }
 
@@ -68,7 +68,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             message = ": " + event.getReason();
         }
-        plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
+        plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
                 " has left ", event.getChannel().getName(), message);
     }
 
@@ -84,7 +84,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         } else {
             message = ": " + event.getReason();
         }
-        plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE,
+        plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE,
                 event.getUser().getNick(), " has left IRC", message);
     }
 
@@ -104,7 +104,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     @Override
     public void onAction(ActionEvent<PircBotX> event) {
         if (!event.getUser().getNick().equals(event.getBot().getNick())) {
-            plugin.getEngine().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, event.getChannel().getName(), ": * ", event.getUser().getNick(), " ", event.getAction());
+            plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, event.getChannel().getName(), ": * ", event.getUser().getNick(), " ", event.getAction());
         }
     }
 

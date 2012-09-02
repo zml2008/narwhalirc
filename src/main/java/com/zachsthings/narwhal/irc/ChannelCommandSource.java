@@ -65,10 +65,12 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
 
 	// -- Spout interface methods
 
+    @Override
     public boolean sendMessage(Object... message) {
         return sendMessage(new ChatArguments(message));
     }
 
+    @Override
     public void sendCommand(String cmd, ChatArguments args) {
         if (cmd.equalsIgnoreCase("say")) {
             sendMessage(args);
@@ -77,6 +79,7 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
         }
     }
 
+    @Override
     public void processCommand(String cmdName, ChatArguments args) {
         Command cmd = plugin.getBotCommands().getChild(cmdName);
         if (cmd != null) {
@@ -86,6 +89,7 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
         }
     }
 
+    @Override
     public boolean sendMessage(ChatArguments message) {
         String messageStr = message.asString(IrcStyleHandler.ID);
         if (!NarwhalServerListener.checkDupeMessage(messageStr)) {
@@ -95,36 +99,53 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
         return true;
     }
 
+    @Override
     public boolean sendRawMessage(Object... message) {
         return sendRawMessage(new ChatArguments(message));
     }
 
+    @Override
     public boolean sendRawMessage(ChatArguments message) {
         channel.getBot().sendMessage(channel, message.asString(IrcStyleHandler.ID));
         return true;
     }
 
+    @Override
     public Locale getPreferredLocale() {
         return Locale.ENGLISH_US;
     }
 
+    @Override
     public String getName() {
         return channel.getBot().getServer() + ":" + channel.getName();
     }
 
+    @Override
     public ValueHolder getData(String s) {
-        return new ValueHolderBase(null) {
-            @Override
-            public Object getValue(Object def) {
-                return null;
-            }
-        };
+        return getData(null, s);
     }
 
+    @Override
+    public ValueHolder getData(World world, String s) {
+        return new ValueHolderBase.NullHolder();
+    }
+
+    @Override
+    public boolean hasData(String s) {
+        return hasData(null, s);
+    }
+
+    @Override
+    public boolean hasData(World world, String s) {
+        return false;
+    }
+
+    @Override
     public boolean hasPermission(String permission) {
         return hasPermission(null, permission);
     }
 
+    @Override
     public boolean hasPermission(World world, String permission) {
         PermissionNodeEvent event = new PermissionNodeEvent(world, this, permission);
         for (String perm : event.getNodes()) {
@@ -142,15 +163,23 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
         return permissions.get(perm);
     }
 
+    @Override
     public boolean isInGroup(String s) {
+        return isInGroup(null, s);
+    }
+
+    @Override
+    public boolean isInGroup(World world, String s) {
         return false;
     }
 
+    @Override
     public String[] getGroups() {
-        return new String[0];
+        return getGroups(null);
     }
 
-    public boolean isGroup() {
-        return false;
+    @Override
+    public String[] getGroups(World world) {
+        return new String[0];
     }
 }

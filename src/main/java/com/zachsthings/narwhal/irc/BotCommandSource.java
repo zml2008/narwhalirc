@@ -37,10 +37,12 @@ public class BotCommandSource implements CommandSource {
         this.stripColor = stripColor;
     }
 
+    @Override
     public boolean sendMessage(Object... message) {
         return sendMessage(new ChatArguments(message));
     }
 
+    @Override
     public void sendCommand(String cmd, ChatArguments args) {
         if (cmd.equalsIgnoreCase("say")) {
             sendMessage(args);
@@ -49,6 +51,7 @@ public class BotCommandSource implements CommandSource {
         }
     }
 
+    @Override
     public void processCommand(String cmdName, ChatArguments args) {
         NarwhalIRCUtil.handleCommand(this, cmdName, args);
         /*
@@ -60,6 +63,7 @@ public class BotCommandSource implements CommandSource {
         }*/
     }
 
+    @Override
     public boolean sendMessage(ChatArguments message) {
         String messageStr = stripColor ? message.getPlainString() : message.asString(IrcStyleHandler.ID);
         if (channel == null) {
@@ -70,10 +74,12 @@ public class BotCommandSource implements CommandSource {
         return true;
     }
 
+    @Override
     public boolean sendRawMessage(Object... message) {
         return sendRawMessage(new ChatArguments(message));
     }
 
+    @Override
     public boolean sendRawMessage(ChatArguments message) {
         if (channel == null) {
             user.getBot().sendMessage(user, message.asString(IrcStyleHandler.ID));
@@ -83,41 +89,64 @@ public class BotCommandSource implements CommandSource {
         return true;
     }
 
+    @Override
     public Locale getPreferredLocale() {
         return Locale.ENGLISH_US;
     }
 
+    @Override
     public String getName() {
         return user.getNick();
     }
 
+    @Override
     public ValueHolder getData(String s) {
-        return new ValueHolderBase(null) {
-            @Override
-            public Object getValue(Object def) {
-                return def;
-            }
-        };
+        return getData(null, s);
     }
 
-    public boolean hasPermission(String s) {
+    @Override
+    public ValueHolder getData(World world, String s) {
+        return new ValueHolderBase.NullHolder();
+    }
+
+    @Override
+    public boolean hasData(String s) {
+        return hasData(null, s);
+    }
+
+    @Override
+    public boolean hasData(World world, String s) {
         return false;
     }
 
+    @Override
+    public boolean hasPermission(String s) {
+        return hasPermission(null, s);
+    }
+
+    @Override
     public boolean hasPermission(World world, String s) {
         return false;
     }
 
+    @Override
     public boolean isInGroup(String s) {
+        return isInGroup(null, s);
+    }
+
+    @Override
+    public boolean isInGroup(World world, String s) {
         return false;
     }
 
+    @Override
     public String[] getGroups() {
-        return new String[0];
+        return getGroups(null);
     }
 
-    public boolean isGroup() {
-        return false;
+    @Override
+    public String[] getGroups(World world) {
+        return new String[0];
     }
 
     public User getUser() {

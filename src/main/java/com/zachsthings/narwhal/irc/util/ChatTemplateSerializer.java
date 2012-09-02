@@ -11,12 +11,12 @@ public class ChatTemplateSerializer extends Serializer {
     @Override
     protected Object handleDeserialize(GenericType genericType, Object o) {
         String value = String.valueOf(o);
-        return NarwhalIRCUtil.fromString(value);
+        return ChatTemplate.fromFormatString(value);
     }
 
     @Override
     protected Object handleSerialize(GenericType type, Object value) {
-        return NarwhalIRCUtil.toTemplateString(((ChatTemplate) value).getArguments());
+        return ((ChatTemplate) value).toFormatString();
     }
 
     @Override

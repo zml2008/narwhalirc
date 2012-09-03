@@ -79,7 +79,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
             getLogger().log(Level.SEVERE, "Unable to load configuration for plugin: " + e.getMessage(), e);
         }
         DefaultPermissions.addDefaultPermission(IRC_BROADCAST_PERMISSION);
-        getEngine().getRootCommand().addSubCommands(this, Commands.class, commandRegistration);
+        getEngine().getRootCommand().addSubCommands(this, IRCCommands.class, commandRegistration);
         getEngine().getEventManager().registerEvents(new NarwhalServerListener(this), this);
         botCommands.addSubCommands(this, BasicBotCommands.class, commandRegistration);
     }
@@ -177,56 +177,5 @@ public class NarwhalIRCPlugin extends CommonPlugin {
 
     public Collection<BotSession> getBots() {
         return Collections.unmodifiableCollection(bots.values());
-    }
-
-    public class Commands {
-        @Command(aliases = "irc", desc = "Commands related to NarwhalIRC")
-        @NestedCommand(IrcCommands.class)
-        public void irc() {}
-
-    }
-
-    public class IrcCommands {
-        @Command(aliases = {"msg", "tell", "message"}, desc = "Send a message to a user or channel in IRC", usage = "<server>:<user> <message>", min = 2, max = -1)
-        @CommandPermissions("narwhal.irc.msg")
-        public void msg(CommandContext args, CommandSource sender) throws CommandException {
-            CommandSource target;
-            String[] split = args.getString(0).split(":", 2);
-            if (split.length < 2) {
-                throw new CommandException("A server must be specified for this command");
-            }
-
-            BotSession bot = getBot(split[0]);
-            if (bot == null) {
-                throw new CommandException("No bot for server '" + split[0] + "'!");
-            }
-
-            if (split[1].startsWith("#")) {
-               target = bot.getChannel(split[1]);
-            } else {
-                target = bot.getSender(split[1], null);
-            }
-            target.sendMessage(args.getJoinedString(1));
-        }
-
-        @Command(aliases = {"channels", "chans"}, desc = "Lists all the channels this server is connected to")
-        @CommandPermissions("narwhal.irc.channels")
-        public void channels(CommandContext args, CommandSource sender) throws CommandException {
-            for (BotSession bot : bots.values()) {
-                ChatArguments builder = new ChatArguments();
-                builder.append(ChatStyle.BLUE).append(bot.getServer()).append(": ");
-                for (Iterator<ChannelCommandSource> i = bot.getChannels().iterator(); i.hasNext(); ) {
-                    final Channel chan = i.next().getChannel();
-                    if (chan.getChannelKey() != null) {
-                        builder.append("+");
-                    }
-                    builder.append(chan.getName());
-                    if (i.hasNext()) {
-                        builder.append(", ");
-                    }
-                }
-                sender.sendMessage(builder);
-            }
-        }
     }
 }

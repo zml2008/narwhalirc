@@ -5,6 +5,8 @@ import com.zachsthings.narwhal.irc.util.FormatConfigurationMigrator;
 import org.pircbotx.Channel;
 import org.spout.api.Server;
 import org.spout.api.chat.ChatArguments;
+import org.spout.api.chat.channel.ChatChannel;
+import org.spout.api.chat.channel.PermissionChatChannel;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.CommandContext;
 import org.spout.api.command.CommandSource;
@@ -16,6 +18,7 @@ import org.spout.api.permissions.DefaultPermissions;
 import org.spout.api.plugin.CommonPlugin;
 import org.spout.api.util.config.MapConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
+import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
 import org.spout.api.util.config.annotated.Setting;
 import org.spout.api.util.config.migration.MigrationException;
 import org.spout.api.util.config.serialization.Serialization;
@@ -34,7 +37,9 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     /**
      * This is the permission required for users to receive messages sent from IRC
      */
-    public static String IRC_BROADCAST_PERMISSION = "narwhal.irc.broadcast";
+    public static final String IRC_BROADCAST_PERMISSION = "narwhal.irc.broadcast";
+
+    public static final ChatChannel IRC_BROADCAST_CHANNEL = new PermissionChatChannel("NarwhalIRC", "narwhal.irc.broadcast");
 
     /**
      * A Set of permissions that no bot has
@@ -42,6 +47,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     public static final Set<String> BLACKLISTED_BOT_PERMS =
             Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
                     IRC_BROADCAST_PERMISSION,
+                    "spout.chat.receive",
                     "spout.chat.receive.*",
                     "-spout.chat.receive.console")));
 
@@ -78,7 +84,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         } catch (ConfigurationException e) {
             getLogger().log(Level.SEVERE, "Unable to load configuration for plugin: " + e.getMessage(), e);
         }
-        DefaultPermissions.addDefaultPermission(IRC_BROADCAST_PERMISSION);
+        getEngine().getDefaultPermissions().addDefaultPermission(IRC_BROADCAST_PERMISSION);
         getEngine().getRootCommand().addSubCommands(this, IRCCommands.class, commandRegistration);
         getEngine().getEventManager().registerEvents(new NarwhalServerListener(this), this);
         botCommands.addSubCommands(this, BasicBotCommands.class, commandRegistration);
@@ -111,7 +117,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         return server;
     }
 
-    private class LocalConfiguration extends AnnotatedConfiguration {
+    private class LocalConfiguration extends AnnotatedSubclassConfiguration {
         @Setting("command-prefix") public String commandPrefix = ".";
         @Setting("connections") public Map<String, Map<?, ?>> serverMap = createServerMap();
 

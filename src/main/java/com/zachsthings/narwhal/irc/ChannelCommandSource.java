@@ -1,10 +1,12 @@
 package com.zachsthings.narwhal.irc;
 
+import com.google.common.base.Preconditions;
 import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
 import org.pircbotx.Channel;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.ChatTemplate;
 import org.spout.api.chat.Placeholder;
+import org.spout.api.chat.channel.ChatChannel;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.command.Command;
 import org.spout.api.command.CommandSource;
@@ -15,15 +17,16 @@ import org.spout.api.event.server.permissions.PermissionNodeEvent;
 import org.spout.api.geo.World;
 import org.spout.api.lang.Locale;
 import org.spout.api.util.config.Configuration;
-import org.spout.api.util.config.annotated.AnnotatedConfiguration;
+import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
 import org.spout.api.util.config.annotated.Setting;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * There is one ChannelCommandSource per channel which handles broad
  */
-public class ChannelCommandSource extends AnnotatedConfiguration implements CommandSource {
+public class ChannelCommandSource extends AnnotatedSubclassConfiguration implements CommandSource {
     public static final Placeholder NAME = new Placeholder("NAME"), CHANNEL = new Placeholder("CHANNEL"), MESSAGE = new Placeholder("MESSAGE"), EVENT = new Placeholder("EVENT");
 
 	@Setting("key") private String channelKey;
@@ -35,6 +38,7 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
     private final NarwhalIRCPlugin plugin;
     private final Channel channel;
     private boolean stripColor;
+    private final AtomicReference<ChatChannel> activeChannel = new AtomicReference<ChatChannel>(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL);
 
     public ChannelCommandSource(NarwhalIRCPlugin plugin, Configuration config, Channel channel, boolean stripColor) {
         super(config);
@@ -113,6 +117,18 @@ public class ChannelCommandSource extends AnnotatedConfiguration implements Comm
     @Override
     public Locale getPreferredLocale() {
         return Locale.ENGLISH_US;
+    }
+
+    @Override
+    public ChatChannel getActiveChannel() {
+        return activeChannel.get();
+    }
+
+    @Override
+    public void setActiveChannel(ChatChannel chatChannel) {
+        Preconditions.checkNotNull(chatChannel);
+        chatChannel.onAttachTo(this);
+        activeChannel.getAndSet(chatChannel).onDetachedFrom(this);
     }
 
     @Override

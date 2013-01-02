@@ -1,15 +1,19 @@
 package com.zachsthings.narwhal.irc;
 
+import com.google.common.base.Preconditions;
 import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
 import com.zachsthings.narwhal.irc.util.NarwhalIRCUtil;
 import org.pircbotx.Channel;
 import org.pircbotx.User;
 import org.spout.api.chat.ChatArguments;
+import org.spout.api.chat.channel.ChatChannel;
 import org.spout.api.command.CommandSource;
 import org.spout.api.data.ValueHolder;
 import org.spout.api.data.ValueHolderBase;
 import org.spout.api.geo.World;
 import org.spout.api.lang.Locale;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This is a CommandSender implementation for users in an IRC channel.
@@ -29,6 +33,8 @@ public class BotCommandSource implements CommandSource {
     private final Channel channel;
 
     private final boolean stripColor;
+
+    private final AtomicReference<ChatChannel> activeChannel = new AtomicReference<ChatChannel>(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL);
 
     public BotCommandSource(NarwhalIRCPlugin plugin, User user, Channel channel, boolean stripColor) {
         this.plugin = plugin;
@@ -92,6 +98,18 @@ public class BotCommandSource implements CommandSource {
     @Override
     public Locale getPreferredLocale() {
         return Locale.ENGLISH_US;
+    }
+
+    @Override
+    public ChatChannel getActiveChannel() {
+        return activeChannel.get();
+    }
+
+    @Override
+    public void setActiveChannel(ChatChannel chatChannel) {
+        Preconditions.checkNotNull(chatChannel);
+        chatChannel.onAttachTo(this);
+        activeChannel.getAndSet(chatChannel).onDetachedFrom(this);
     }
 
     @Override

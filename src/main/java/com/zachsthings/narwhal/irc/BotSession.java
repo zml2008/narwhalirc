@@ -11,6 +11,7 @@ import org.spout.api.exception.ConfigurationException;
 import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.MapConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedConfiguration;
+import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
 import org.spout.api.util.config.annotated.Setting;
 
 import java.io.IOException;
@@ -25,7 +26,7 @@ import static com.zachsthings.narwhal.irc.util.NarwhalIRCUtil.getNestedMap;
 /**
 * @author zml2008
 */
-public class BotSession extends AnnotatedConfiguration {
+public class BotSession extends AnnotatedSubclassConfiguration {
     private final String server;
     private final PircBotX bot;
     private final NarwhalIRCPlugin plugin;
@@ -39,7 +40,7 @@ public class BotSession extends AnnotatedConfiguration {
     @Setting("strip-color") private boolean stripColor;
     @Setting("bind-address") private String bindAddress;
 
-    private static class SSlConfiguration extends AnnotatedConfiguration {
+    private static class SSlConfiguration extends AnnotatedSubclassConfiguration {
         @Setting("trust-all-certs") public boolean trustAllCerts;
         @Setting("enabled") public boolean enabled;
 

@@ -17,8 +17,11 @@
  */
 package com.zachsthings.narwhal.irc;
 
+import org.pircbotx.OutputThread;
 import org.pircbotx.PircBotX;
 import org.spout.api.Spout;
+
+import java.io.BufferedWriter;
 
 /**
  * Our subclass of {@link PircBotX} that fixes an issue where shutdown doesn't correctly
@@ -31,10 +34,78 @@ public class NarwhalBot extends PircBotX {
             setVerbose(true);
         }
     }
-    public void shutdown() {
-        super.shutdown();
-        /*if (outputThread.getQueueSize() == 0) {
+
+    public void cleanUp() {
+        if (isConnected()) {
+            throw new IllegalStateException("Cannot clean up threads while still connected");
+        }
+        if (inputThread != null) {
+            inputThread.interrupt();
+            inputThread = null;
+        }
+
+        if (outputThread != null) {
             outputThread.interrupt();
-        }*/
+            outputThread = null;
+        }
     }
+
+    public void shutdown(String message) {
+        if (isConnected()) {
+            sendRawLine("QUIT :" + message);
+        }
+        shutdown();
+    }
+
+    /*protected NarwhalOutputThread createOutputThread(BufferedWriter bwriter) {
+        NarwhalOutputThread output = new NarwhalOutputThread(this, bwriter);
+        output.setName("bot" + botCount + "-output");
+        return output;
+    }
+
+    private static class NarwhalOutputThread extends OutputThread {
+
+        /**
+         * Constructs an OutputThread for the underlying PircBotX.  All messages
+         * sent to the IRC server are sent by this OutputThread to avoid hammering
+         * the server.  Messages are sent immediately if possible.  If there are
+         * multiple messages queued, then there is a delay imposed.
+         *
+         * @param bot The underlying PircBotX instance.
+         *
+        protected NarwhalOutputThread(PircBotX bot, BufferedWriter bwriter) {
+            super(bot, bwriter);
+        }
+
+        @SuppressWarnings("deprecation")
+        public void shutdown() {
+            interrupt();
+            Thread.dumpStack();
+            String line;
+            while ((line = queue.poll()) != null) {
+                sendRawLineNow(line);
+            }
+            stop(); // Stop and shut up
+        }
+
+        /**
+         * Overridden run method
+         *
+        @Override
+        public void run() {
+            try {
+                while (!this.isInterrupted()) {
+                    String line = queue.take();
+                    failIfNotConnected();
+                    if (line != null && bot.isConnected())
+                        sendRawLineNow(line);
+
+                    //Small delay to prevent spamming of the channel
+                    Thread.sleep(bot.getMessageDelay());
+                }
+            } catch (InterruptedException e) {
+                // Just let the method return naturally...
+            }
+        }
+    }*/
 }

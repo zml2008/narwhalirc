@@ -19,22 +19,15 @@ package com.zachsthings.narwhal.irc;
 
 import com.zachsthings.narwhal.irc.util.ChatTemplateSerializer;
 import com.zachsthings.narwhal.irc.util.FormatConfigurationMigrator;
-import org.pircbotx.Channel;
 import org.spout.api.Server;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.channel.ChatChannel;
 import org.spout.api.chat.channel.PermissionChatChannel;
-import org.spout.api.chat.style.ChatStyle;
-import org.spout.api.command.CommandContext;
-import org.spout.api.command.CommandSource;
 import org.spout.api.command.RootCommand;
 import org.spout.api.command.annotated.*;
-import org.spout.api.exception.CommandException;
 import org.spout.api.exception.ConfigurationException;
-import org.spout.api.permissions.DefaultPermissions;
 import org.spout.api.plugin.CommonPlugin;
 import org.spout.api.util.config.MapConfiguration;
-import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
 import org.spout.api.util.config.annotated.Setting;
 import org.spout.api.util.config.migration.MigrationException;
@@ -163,8 +156,12 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         for (Map.Entry<String, Map<?, ?>> entry : config.serverMap.entrySet()) {
             BotSession bot = new BotSession(new MapConfiguration(entry.getValue()), entry.getKey(), this);
             bot.load();
-            bot.connect();
-            bot.joinChannels();
+            if (bot.connect()) {
+                bot.joinChannels();
+            } else {
+                bot.save();
+                continue;
+            }
             bots.put(entry.getKey(), bot);
             bot.save();
         }

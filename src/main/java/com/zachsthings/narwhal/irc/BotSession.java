@@ -31,6 +31,7 @@ import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
 import org.spout.api.util.config.annotated.Setting;
 
+import javax.net.ssl.SSLHandshakeException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -45,7 +46,7 @@ import static com.zachsthings.narwhal.irc.util.NarwhalIRCUtil.getNestedMap;
 */
 public class BotSession extends AnnotatedSubclassConfiguration {
     private final String server;
-    private final PircBotX bot;
+    private final NarwhalBot bot;
     private final NarwhalIRCPlugin plugin;
     private final Map<String, Map<String, BotCommandSource>> senders = new HashMap<String, Map<String, BotCommandSource>>();
     private final Map<String, ChannelCommandSource> channelSenders = new HashMap<String, ChannelCommandSource>();
@@ -85,6 +86,7 @@ public class BotSession extends AnnotatedSubclassConfiguration {
     }
 
     public boolean connect() {
+        boolean success = true;
         bot.startIdentServer();
         bot.setName(nick);
 
@@ -108,17 +110,28 @@ public class BotSession extends AnnotatedSubclassConfiguration {
                 bot.connect(server, port);
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            return false;
+            plugin.getLogger().log(Level.SEVERE, "Error connecting to IRC server " + server + ":" + port, e);
+            success = false;
         } catch (IrcException e) {
-            e.printStackTrace();
-            return false;
+            plugin.getLogger().log(Level.SEVERE, "Error connecting to IRC server " + server + ":" + port, e);
+            success = false;
+        } catch (Exception e) {
+            if (e.getCause() instanceof SSLHandshakeException) {
+                plugin.getLogger().log(Level.SEVERE, "Error connecting to IRC server " + server + ":" + port + ", invalid SSL cert ", e.getCause());
+            }
+            success = false;
         }
-        if (this.nickServPass != null && this.nickServPass.length() > 0) {
-            //bot.sendMessage(bot.getUser("NickServ"), "IDENTIFY " + bot.getName() + " " + this.nickServPass);
-            bot.identify(nickServPass);
+
+        if (success) {
+            if (this.nickServPass != null && this.nickServPass.length() > 0) {
+                //bot.sendMessage(bot.getUser("NickServ"), "IDENTIFY " + bot.getName() + " " + this.nickServPass);
+                bot.identify(nickServPass);
+            }
+        } else {
+            bot.cleanUp();
         }
-        return true;
+
+        return success;
     }
 
     public void joinChannels() {
@@ -144,13 +157,10 @@ public class BotSession extends AnnotatedSubclassConfiguration {
     }
 
     public void quit(String reason, boolean shutdown) {
-        if (bot.isConnected()) {
-            if (shutdown) {
-                bot.sendRawLineNow("QUIT :" + reason);
-                bot.shutdown();
-            } else {
-                bot.quitServer(reason);
-            }
+        if (shutdown) {
+            bot.shutdown(reason);
+        } else {
+            bot.quitServer(reason);
         }
         senders.clear();
         channelSenders.clear();

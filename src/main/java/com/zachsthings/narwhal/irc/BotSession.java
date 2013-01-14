@@ -168,12 +168,8 @@ public class BotSession extends AnnotatedSubclassConfiguration {
         }
     }
 
-    public void quit(String reason, boolean shutdown) {
-        if (shutdown) {
-            bot.shutdown(reason);
-        } else {
-            bot.quitServer(reason);
-        }
+    public void quit(String reason) {
+        bot.quitServer(reason);
         senders.clear();
         channelSenders.clear();
     }

@@ -46,13 +46,6 @@ public class NarwhalBot extends PircBotX {
         }
     }
 
-    public void shutdown(String message) {
-        if (isConnected()) {
-            sendRawLineNow("QUIT :" + message);
-        }
-        shutdown();
-    }
-
     /*protected NarwhalOutputThread createOutputThread(BufferedWriter bwriter) {
         NarwhalOutputThread output = new NarwhalOutputThread(this, bwriter);
         output.setName("bot" + botCount + "-output");

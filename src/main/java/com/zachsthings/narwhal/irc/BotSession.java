@@ -23,6 +23,8 @@ import org.pircbotx.Channel;
 import org.pircbotx.User;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.exception.IrcException;
+import org.pircbotx.hooks.ListenerAdapter;
+import org.pircbotx.hooks.events.DisconnectEvent;
 import org.spout.api.exception.ConfigurationException;
 import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.MapConfiguration;
@@ -78,7 +80,7 @@ public class BotSession extends AnnotatedSubclassConfiguration {
         super(config);
         this.server = server;
         this.plugin = plugin;
-        this.bot = new NarwhalBot();
+        this.bot = new NarwhalBot(plugin.doesDebugLog());
         bot.getListenerManager().addListener(new NarwhalBotListener(this, plugin));
         bot.setMessageDelay(250);
         bot.setLogin("Narwhal");
@@ -127,7 +129,18 @@ public class BotSession extends AnnotatedSubclassConfiguration {
                 bot.identify(nickServPass);
             }
         } else {
-            bot.cleanUp();
+            if (bot.isConnected()) {
+                bot.getListenerManager().addListener(new ListenerAdapter() {
+                    @Override
+                    public void onDisconnect(DisconnectEvent event) throws Exception {
+                        bot.cleanUp();
+                        bot.getListenerManager().removeListener(this);
+                    }
+                });
+                bot.disconnect();
+            } else {
+                bot.cleanUp();
+            }
         }
 
         return success;

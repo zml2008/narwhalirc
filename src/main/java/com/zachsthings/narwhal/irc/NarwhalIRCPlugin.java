@@ -129,6 +129,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
 
     private class LocalConfiguration extends AnnotatedSubclassConfiguration {
         @Setting("command-prefix") public String commandPrefix = ".";
+        @Setting("debug-log") public boolean debugLog = false;
         @Setting("connections") public Map<String, Map<?, ?>> serverMap = createServerMap();
 
         public LocalConfiguration(File file) {
@@ -139,7 +140,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
             Map<String, Map<?, ?>> ret = new HashMap<String, Map<?, ?>>();
             Map<String, Object> defServer = new HashMap<String, Object>();
             defServer.put("port", "6667");
-            ret.put("zachsthings.com", defServer);
+            ret.put("irc.zachsthings.com", defServer);
             return ret;
         }
     }
@@ -189,6 +190,10 @@ public class NarwhalIRCPlugin extends CommonPlugin {
 
     public String getCommandPrefix() {
         return config.commandPrefix;
+    }
+
+    public boolean doesDebugLog() {
+        return config.debugLog;
     }
 
     public BotSession getBot(String server) {

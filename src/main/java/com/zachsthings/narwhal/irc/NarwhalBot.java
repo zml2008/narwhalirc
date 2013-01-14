@@ -17,20 +17,16 @@
  */
 package com.zachsthings.narwhal.irc;
 
-import org.pircbotx.OutputThread;
 import org.pircbotx.PircBotX;
-import org.spout.api.Spout;
-
-import java.io.BufferedWriter;
 
 /**
  * Our subclass of {@link PircBotX} that fixes an issue where shutdown doesn't correctly
  * stop the output thread
  */
 public class NarwhalBot extends PircBotX {
-    public NarwhalBot() {
+    public NarwhalBot(boolean debugLog) {
         super();
-        if (Spout.debugMode()) {
+        if (debugLog) {
             setVerbose(true);
         }
     }

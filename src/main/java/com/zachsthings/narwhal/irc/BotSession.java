@@ -20,14 +20,12 @@ package com.zachsthings.narwhal.irc;
 import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
 import com.zachsthings.narwhal.irc.util.NarwhalIRCUtil;
 import org.pircbotx.Channel;
-import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.exception.IrcException;
 import org.spout.api.exception.ConfigurationException;
 import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.MapConfiguration;
-import org.spout.api.util.config.annotated.AnnotatedConfiguration;
 import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
 import org.spout.api.util.config.annotated.Setting;
 
@@ -57,6 +55,7 @@ public class BotSession extends AnnotatedSubclassConfiguration {
     @Setting("nickserv-pass") private String nickServPass;
     @Setting("strip-color") private boolean stripColor;
     @Setting("bind-address") private String bindAddress;
+    @Setting("password") private String password;
 
     private static class SSlConfiguration extends AnnotatedSubclassConfiguration {
         @Setting("trust-all-certs") public boolean trustAllCerts;
@@ -105,9 +104,9 @@ public class BotSession extends AnnotatedSubclassConfiguration {
                 if (this.ssl.trustAllCerts) {
                     factory.trustAllCertificates();
                 }
-                bot.connect(server, port, factory);
+                bot.connect(server, port, password, factory);
             } else {
-                bot.connect(server, port);
+                bot.connect(server, port, password);
             }
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, "Error connecting to IRC server " + server + ":" + port, e);

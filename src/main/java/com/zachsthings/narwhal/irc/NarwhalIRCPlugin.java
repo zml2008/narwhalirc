@@ -57,6 +57,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     public static final Set<String> BLACKLISTED_BOT_PERMS =
             Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
                     IRC_BROADCAST_PERMISSION,
+                    "spout.chat.send",
                     "spout.chat.receive",
                     "spout.chat.receive.*",
                     "-spout.chat.receive.console")));

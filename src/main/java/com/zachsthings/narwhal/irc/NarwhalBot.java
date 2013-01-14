@@ -48,7 +48,7 @@ public class NarwhalBot extends PircBotX {
 
     public void shutdown(String message) {
         if (isConnected()) {
-            sendRawLine("QUIT :" + message);
+            sendRawLineNow("QUIT :" + message);
         }
         shutdown();
     }

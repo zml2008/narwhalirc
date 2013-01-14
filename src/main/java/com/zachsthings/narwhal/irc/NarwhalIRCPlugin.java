@@ -81,6 +81,11 @@ public class NarwhalIRCPlugin extends CommonPlugin {
             new AnnotatedCommandRegistrationFactory(new SimpleInjector(this));
 
     @Override
+    public void onLoad() {
+        getEngine().getDefaultPermissions().addDefaultPermission(IRC_BROADCAST_PERMISSION);
+    }
+
+    @Override
     public void onEnable() {
         if (!(getEngine() instanceof Server)) {
             throw new IllegalStateException("NarwhalIRC can only run on servers!");
@@ -95,7 +100,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         } catch (ConfigurationException e) {
             getLogger().log(Level.SEVERE, "Unable to load configuration for plugin: " + e.getMessage(), e);
         }
-        getEngine().getDefaultPermissions().addDefaultPermission(IRC_BROADCAST_PERMISSION);
+
         getEngine().getRootCommand().addSubCommands(this, IRCCommands.class, commandRegistration);
         getEngine().getEventManager().registerEvents(new NarwhalServerListener(this), this);
         botCommands.addSubCommands(this, BasicBotCommands.class, commandRegistration);

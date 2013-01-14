@@ -40,18 +40,20 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
 
     @Override
     public void onMessage(MessageEvent<PircBotX> event) {
+        ChannelCommandSource source = session.getChannel(event.getChannel().getName());
+        if (source == null) {
+            return;
+        }
+
         if (event.getMessage().startsWith(plugin.getCommandPrefix())) {
             session.handleCommand(event.getUser(), event.getChannel(), event.getMessage().substring(plugin.getCommandPrefix().length()));
         } else {
-            ChannelCommandSource source = session.getChannel(event.getChannel().getName());
-            if (source != null) {
-                ChatArguments args = source.getIrcToServerFormat().getArguments();
-                if (args.hasPlaceholder(ChannelCommandSource.NAME)) args.setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getUser().getNick()));
-                if (args.hasPlaceholder(ChannelCommandSource.CHANNEL)) args.setPlaceHolder(ChannelCommandSource.CHANNEL, new ChatArguments(event.getChannel().getName()));
-                if (args.hasPlaceholder(ChannelCommandSource.MESSAGE)) args.setPlaceHolder(ChannelCommandSource.MESSAGE, ChatArguments.fromString(event.getMessage(), IrcStyleHandler.ID));
+            ChatArguments args = source.getIrcToServerFormat().getArguments();
+            if (args.hasPlaceholder(ChannelCommandSource.NAME)) args.setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getUser().getNick()));
+            if (args.hasPlaceholder(ChannelCommandSource.CHANNEL)) args.setPlaceHolder(ChannelCommandSource.CHANNEL, new ChatArguments(event.getChannel().getName()));
+            if (args.hasPlaceholder(ChannelCommandSource.MESSAGE)) args.setPlaceHolder(ChannelCommandSource.MESSAGE, ChatArguments.fromString(event.getMessage(), IrcStyleHandler.ID));
 
-                plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, args);
-            }
+            plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, args);
         }
     }
 
@@ -67,6 +69,9 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
 
     @Override
     public void onJoin(JoinEvent<PircBotX> event) {
+        if (session.getChannel(event.getChannel().getName()) == null) {
+            return;
+        }
         if (event.getUser().getNick().equals(event.getBot().getNick())) return;
         plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
                 " has joined ", event.getChannel().getName());
@@ -75,6 +80,9 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
 
     @Override
     public void onPart(PartEvent<PircBotX> event) {
+        if (session.getChannel(event.getChannel().getName()) == null) {
+            return;
+        }
         if (event.getUser().getNick().equals(event.getBot().getNick())) return;
         session.removeSender(event.getUser(), event.getChannel());
         String message;
@@ -92,6 +100,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         if (event.getUser().equals(event.getBot().getUserBot())) {
             return;
         }
+
         session.removeSender(event.getUser());
         String message;
         if (event.getReason().equals("")) {
@@ -118,6 +127,9 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
 
     @Override
     public void onAction(ActionEvent<PircBotX> event) {
+        if (session.getChannel(event.getChannel().getName()) == null) {
+            return;
+        }
         if (!event.getUser().getNick().equals(event.getBot().getNick())) {
             plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, event.getChannel().getName(), ": * ", event.getUser().getNick(), " ", event.getAction());
         }

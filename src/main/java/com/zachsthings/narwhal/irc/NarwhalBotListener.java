@@ -97,6 +97,18 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
 
     @Override
     public void onQuit(QuitEvent<PircBotX> event) {
+        boolean contains = false;
+        for (ChannelCommandSource source : session.getChannels()) {
+            if (source.getChannel().getUsers().contains(event.getUser())) {
+                contains = true;
+                break;
+            }
+        }
+
+        if (!contains) {
+            return;
+        }
+
         if (event.getUser().equals(event.getBot().getUserBot())) {
             return;
         }

@@ -54,14 +54,15 @@ public class NarwhalServerListener implements Listener {
         }
     }
 
-    private void addDupeMessage(PassedEvent event, String message) {
+    private void addDupeMessage(String message) {
         int chanCount = 0;
         for (BotSession bot : plugin.getBots()) {
-            for (ChannelCommandSource channel : bot.getChannels()) {
+            /*for (ChannelCommandSource channel : bot.getChannels()) {
                 if (channel.receivesEvent(event)) {
                     ++chanCount;
                 }
-            }
+            }*/
+            chanCount += bot.getChannels().size();
         }
         dupeMessages.put(message, chanCount);
     }
@@ -93,7 +94,7 @@ public class NarwhalServerListener implements Listener {
         if (event.getMessage() == null) {
             return;
         }
-        addDupeMessage(PassedEvent.JOIN, new ChatArguments(event.getMessage()).asString(IrcStyleHandler.ID));
+        addDupeMessage(new ChatArguments(event.getMessage()).asString(IrcStyleHandler.ID));
         ChatArguments items = new ChatArguments();
         items.append("[").append(event.getMessage()).append(ChatStyle.RESET).append("]");
         plugin.broadcastBotMessage(PassedEvent.JOIN, items);
@@ -105,7 +106,7 @@ public class NarwhalServerListener implements Listener {
             return;
         }
         final PassedEvent passedEvent = event instanceof PlayerKickEvent ? PassedEvent.KICK : PassedEvent.QUIT;
-        addDupeMessage(passedEvent, new ChatArguments(event.getMessage()).asString(IrcStyleHandler.ID));
+        addDupeMessage(new ChatArguments(event.getMessage()).asString(IrcStyleHandler.ID));
         ChatArguments items = new ChatArguments();
         items.append("[").append(event.getMessage()).append(ChatStyle.RESET).append("]");
         plugin.broadcastBotMessage(passedEvent, items);

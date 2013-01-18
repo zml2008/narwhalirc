@@ -47,13 +47,13 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
 
         if (event.getMessage().startsWith(plugin.getCommandPrefix())) {
             session.handleCommand(event.getUser(), event.getChannel(), event.getMessage().substring(plugin.getCommandPrefix().length()));
-        } else {
+        } else if (source.sendsEvent(PassedEvent.MESSAGE)) {
             ChatArguments args = source.getIrcToServerFormat().getArguments();
             if (args.hasPlaceholder(ChannelCommandSource.NAME)) args.setPlaceHolder(ChannelCommandSource.NAME, new ChatArguments(event.getUser().getNick()));
             if (args.hasPlaceholder(ChannelCommandSource.CHANNEL)) args.setPlaceHolder(ChannelCommandSource.CHANNEL, new ChatArguments(event.getChannel().getName()));
             if (args.hasPlaceholder(ChannelCommandSource.MESSAGE)) args.setPlaceHolder(ChannelCommandSource.MESSAGE, ChatArguments.fromString(event.getMessage(), IrcStyleHandler.ID));
 
-            plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, args);
+            plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL, args);
         }
     }
 
@@ -69,39 +69,48 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
 
     @Override
     public void onJoin(JoinEvent<PircBotX> event) {
-        if (session.getChannel(event.getChannel().getName()) == null) {
+        ChannelCommandSource channel = session.getChannel(event.getChannel().getName());
+        if (channel == null) {
             return;
         }
         if (event.getUser().getNick().equals(event.getBot().getNick())) return;
-        plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
+        if (!channel.sendsEvent(PassedEvent.JOIN)) return;
+
+        plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL, ChatStyle.BLUE, event.getUser().getNick(),
                 " has joined ", event.getChannel().getName());
     }
 
 
     @Override
     public void onPart(PartEvent<PircBotX> event) {
-        if (session.getChannel(event.getChannel().getName()) == null) {
+        ChannelCommandSource channel = session.getChannel(event.getChannel().getName());
+        if (channel == null) {
             return;
         }
+
         if (event.getUser().getNick().equals(event.getBot().getNick())) return;
         session.removeSender(event.getUser(), event.getChannel());
-        String message;
-        if (event.getReason().equals("")) {
-            message = "";
-        } else {
-            message = ": " + event.getReason();
+
+        if (channel.sendsEvent(PassedEvent.QUIT)) {
+            String message;
+            if (event.getReason().equals("")) {
+                message = "";
+            } else {
+                message = ": " + event.getReason();
+            }
+            plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL, ChatStyle.BLUE, event.getUser().getNick(),
+                    " has left ", event.getChannel().getName(), message);
         }
-        plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE, event.getUser().getNick(),
-                " has left ", event.getChannel().getName(), message);
     }
 
     @Override
     public void onQuit(QuitEvent<PircBotX> event) {
+        boolean broadcastQuit = false;
         boolean contains = false;
         for (ChannelCommandSource source : session.getChannels()) {
             if (source.getChannel().getUsers().contains(event.getUser())) {
+                broadcastQuit |= source.sendsEvent(PassedEvent.QUIT);
                 contains = true;
-                break;
             }
         }
 
@@ -114,14 +123,17 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
         }
 
         session.removeSender(event.getUser());
-        String message;
-        if (event.getReason().equals("")) {
-            message = "";
-        } else {
-            message = ": " + event.getReason();
+
+        if (broadcastQuit) {
+            String message;
+            if (event.getReason().equals("")) {
+                message = "";
+            } else {
+                message = ": " + event.getReason();
+            }
+            plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL, ChatStyle.BLUE,
+                    event.getUser().getNick(), " has left IRC", message);
         }
-        plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, ChatStyle.BLUE,
-                event.getUser().getNick(), " has left IRC", message);
     }
 
     @Override
@@ -133,17 +145,32 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
                 }
             }, 10000L, TaskPriority.LOW);
         } else {
-            // TODO: Broadcast kick to server
+            ChannelCommandSource source = session.getChannel(event.getChannel().getName());
+            if (source != null) {
+                session.removeSender(event.getRecipient(), event.getChannel());
+                if (source.sendsEvent(PassedEvent.KICK)) {
+                    String message;
+                    if (event.getReason().equals("")) {
+                        message = "";
+                    } else {
+                        message = ": " + event.getReason();
+                    }
+                    plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL, ChatStyle.BLUE,
+                            event.getRecipient().getNick(), " has has been kicked from",
+                            event.getChannel().getName(), " by ", event.getSource().getNick(), message);
+                }
+            }
         }
     }
 
     @Override
     public void onAction(ActionEvent<PircBotX> event) {
-        if (session.getChannel(event.getChannel().getName()) == null) {
+        ChannelCommandSource channel = session.getChannel(event.getChannel().getName());
+        if (channel == null || !channel.sendsEvent(PassedEvent.ACTION)) {
             return;
         }
         if (!event.getUser().getNick().equals(event.getBot().getNick())) {
-            plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_PERMISSION, event.getChannel().getName(), ": * ", event.getUser().getNick(), " ", event.getAction());
+            plugin.getServer().broadcastMessage(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL, event.getChannel().getName(), ": * ", event.getUser().getNick(), " ", event.getAction());
         }
     }
 

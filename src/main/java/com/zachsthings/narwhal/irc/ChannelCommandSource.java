@@ -49,6 +49,7 @@ public class ChannelCommandSource extends AnnotatedSubclassConfiguration impleme
 	@Setting("key") private String channelKey;
 	@Setting("permissions") private Map<String, Boolean> permissions = new HashMap<String, Boolean>();
 	@Setting("receive-events") private Set<PassedEvent> receiveEvents = new HashSet<PassedEvent>(Arrays.asList(PassedEvent.values()));
+    @Setting("send-events") private Set<PassedEvent> sendEvents = new HashSet<PassedEvent>(Arrays.asList(PassedEvent.values()));
     @Setting({"format", "irc-to-server"}) public ChatTemplate ircToServerFormat = new ChatTemplate(new ChatArguments("<", NAME, "> ", CHANNEL, ": ", MESSAGE));
     @Setting({"format", "server-to-irc"}) private ChatTemplate serverToIrcFormat = new ChatTemplate(new ChatArguments(EVENT));
 
@@ -71,6 +72,15 @@ public class ChannelCommandSource extends AnnotatedSubclassConfiguration impleme
 	public boolean receivesEvent(PassedEvent event) {
 		return receiveEvents.contains(event);
 	}
+
+    /**
+     * This method returns whether a message type (IRC -> game)
+     * @param event
+     * @return
+     */
+    public boolean sendsEvent(PassedEvent event) {
+        return sendEvents.contains(event);
+    }
 
     public Channel getChannel() {
         return channel;

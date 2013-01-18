@@ -58,7 +58,7 @@ public class BotSession extends AnnotatedSubclassConfiguration {
     @Setting("strip-color") private boolean stripColor;
     @Setting("bind-address") private String bindAddress;
     @Setting("password") private String password;
-
+    @Setting("connect-timeout") private int connectTimeout = 10000;
     private static class SSlConfiguration extends AnnotatedSubclassConfiguration {
         @Setting("trust-all-certs") public boolean trustAllCerts;
         @Setting("enabled") public boolean enabled;
@@ -70,9 +70,7 @@ public class BotSession extends AnnotatedSubclassConfiguration {
 
     private static Map<String, Map<?, ?>> createDefaultChannels() {
         Map<String, Map<?, ?>> defChannel = new HashMap<String, Map<?, ?>>();
-        Map<String, Object> child = new HashMap<String, Object>();
-        child.put("receive-events", Arrays.asList(PassedEvent.values()));
-        defChannel.put("#zml", child);
+        defChannel.put("#zml", new HashMap<Object, Object>());
         return defChannel;
     }
 
@@ -83,6 +81,7 @@ public class BotSession extends AnnotatedSubclassConfiguration {
         this.bot = new NarwhalBot(plugin.doesDebugLog());
         bot.getListenerManager().addListener(new NarwhalBotListener(this, plugin));
         bot.setMessageDelay(250);
+        bot.setSocketTimeout(connectTimeout);
         bot.setLogin("Narwhal");
     }
 

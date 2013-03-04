@@ -24,7 +24,8 @@ import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.channel.ChatChannel;
 import org.spout.api.chat.channel.PermissionChatChannel;
 import org.spout.api.command.RootCommand;
-import org.spout.api.command.annotated.*;
+import org.spout.api.command.annotated.AnnotatedCommandRegistrationFactory;
+import org.spout.api.command.annotated.SimpleInjector;
 import org.spout.api.exception.ConfigurationException;
 import org.spout.api.plugin.CommonPlugin;
 import org.spout.api.util.config.MapConfiguration;
@@ -43,14 +44,11 @@ import java.util.logging.Level;
  * Main class for NarwhalIRC
  */
 public class NarwhalIRCPlugin extends CommonPlugin {
-
     /**
      * This is the permission required for users to receive messages sent from IRC
      */
     public static final String IRC_BROADCAST_PERMISSION = "narwhal.irc.broadcast";
-
     public static final ChatChannel IRC_BROADCAST_CHANNEL = new PermissionChatChannel("NarwhalIRC", "narwhal.irc.broadcast");
-
     /**
      * A Set of permissions that no bot has
      */
@@ -61,19 +59,13 @@ public class NarwhalIRCPlugin extends CommonPlugin {
                     "spout.chat.receive",
                     "spout.chat.receive.*",
                     "-spout.chat.receive.console")));
-
     private LocalConfiguration config;
-
     private final Map<String, BotSession> bots = new ConcurrentHashMap<String, BotSession>();
-
-
     /**
      * The commands available for bots.
      */
     private RootCommand botCommands;
-
     private Server server;
-
     /**
      * The AnnotatedCommandRegistrationFactory
      */
@@ -106,7 +98,6 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         botCommands.addSubCommands(this, BasicBotCommands.class, commandRegistration);
     }
 
-
     @Override
     public void onReload() {
         super.onReload();
@@ -134,9 +125,16 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     }
 
     private class LocalConfiguration extends AnnotatedSubclassConfiguration {
-        @Setting("command-prefix") public String commandPrefix = ".";
-        @Setting("debug-log") public boolean debugLog = false;
-        @Setting("connections") public Map<String, Map<?, ?>> serverMap = createServerMap();
+        @Setting("command-prefix")
+        public String commandPrefix = ".";
+        @Setting("debug-log")
+        public boolean debugLog = false;
+        @Setting("channel-commands")
+        public boolean channelCommands = true;
+        @Setting("private-commands")
+        public boolean privateCommands = true;
+        @Setting("connections")
+        public Map<String, Map<?, ?>> serverMap = createServerMap();
 
         public LocalConfiguration(File file) {
             super(new YamlConfiguration(file));
@@ -177,16 +175,17 @@ public class NarwhalIRCPlugin extends CommonPlugin {
 
     /**
      * Broadcast a message to all bots that receive the given {@link PassedEvent}
-     * @param type The type of message being passed
+     *
+     * @param type    The type of message being passed
      * @param message The message to broadcast
      */
     public void broadcastBotMessage(PassedEvent type, ChatArguments message) {
         for (BotSession bot : bots.values()) {
-			for (ChannelCommandSource chan : bot.getChannels()) {
-				if (chan.receivesEvent(type)) {
-					chan.sendMessage(message);
-				}
-			}
+            for (ChannelCommandSource chan : bot.getChannels()) {
+                if (chan.receivesEvent(type)) {
+                    chan.sendMessage(message);
+                }
+            }
         }
     }
 
@@ -200,6 +199,14 @@ public class NarwhalIRCPlugin extends CommonPlugin {
 
     public boolean doesDebugLog() {
         return config.debugLog;
+    }
+
+    public boolean doesChannelCommands() {
+        return config.channelCommands;
+    }
+
+    public boolean doesPrivateCommands() {
+        return config.privateCommands;
     }
 
     public BotSession getBot(String server) {

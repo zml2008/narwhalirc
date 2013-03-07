@@ -23,8 +23,10 @@ import org.spout.api.Server;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.channel.ChatChannel;
 import org.spout.api.chat.channel.PermissionChatChannel;
+import org.spout.api.command.CommandRegistrationsFactory;
 import org.spout.api.command.RootCommand;
 import org.spout.api.command.annotated.AnnotatedCommandRegistrationFactory;
+import org.spout.api.command.annotated.SimpleAnnotatedCommandExecutorFactory;
 import org.spout.api.command.annotated.SimpleInjector;
 import org.spout.api.exception.ConfigurationException;
 import org.spout.api.plugin.CommonPlugin;
@@ -69,8 +71,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
     /**
      * The AnnotatedCommandRegistrationFactory
      */
-    private final AnnotatedCommandRegistrationFactory commandRegistration =
-            new AnnotatedCommandRegistrationFactory(new SimpleInjector(this));
+    private final CommandRegistrationsFactory<Class<?>> commandRegistration = new AnnotatedCommandRegistrationFactory(getEngine(), new SimpleInjector(this), new SimpleAnnotatedCommandExecutorFactory());
 
     @Override
     public void onLoad() {

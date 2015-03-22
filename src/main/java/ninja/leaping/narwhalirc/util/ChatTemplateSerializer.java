@@ -15,8 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc.util;
+package ninja.leaping.narwhalirc.util;
 
+import com.google.common.reflect.TypeToken;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
 import org.spout.api.chat.ChatTemplate;
 import org.spout.api.util.config.serialization.GenericType;
 import org.spout.api.util.config.serialization.Serializer;
@@ -24,25 +28,20 @@ import org.spout.api.util.config.serialization.Serializer;
 /**
  * Serializer to get chat templates
  */
-public class ChatTemplateSerializer extends Serializer {
+public class ChatTemplateSerializer implements TypeSerializer {
     @Override
-    protected Object handleDeserialize(GenericType genericType, Object o) {
+    public Object deserialize(TypeToken<?> genericType, ConfigurationNode o) {
         String value = String.valueOf(o);
         return ChatTemplate.fromFormatString(value);
     }
 
     @Override
-    protected Object handleSerialize(GenericType type, Object value) {
+    public void serialize(TypeToken<?> type, Object value, ConfigurationNode node) {
         return ((ChatTemplate) value).toFormatString();
     }
 
     @Override
-    public boolean isApplicable(GenericType genericType) {
-        return ChatTemplate.class.isAssignableFrom(genericType.getMainType());
-    }
-
-    @Override
-    protected int getParametersRequired() {
-        return 0;
+    public boolean isApplicable(TypeToken<?> genericType) {
+        return ChatTemplate.class.isAssignableFrom(genericType.getRawType());
     }
 }

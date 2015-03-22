@@ -15,21 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc;
+package ninja.leaping.narwhalirc;
 
-import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
-import com.zachsthings.narwhal.irc.util.NarwhalIRCUtil;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+import ninja.leaping.narwhalirc.chatstyle.IrcStyleHandler;
+import ninja.leaping.narwhalirc.util.NarwhalIRCUtil;
 import org.pircbotx.Channel;
+import org.pircbotx.Configuration;
+import org.pircbotx.IdentServer;
+import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.DisconnectEvent;
-import org.spout.api.exception.ConfigurationException;
-import org.spout.api.util.config.Configuration;
-import org.spout.api.util.config.MapConfiguration;
-import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
-import org.spout.api.util.config.annotated.Setting;
 
 import javax.net.ssl.SSLHandshakeException;
 import java.io.IOException;
@@ -39,12 +40,10 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
-import static com.zachsthings.narwhal.irc.util.NarwhalIRCUtil.getNestedMap;
-
 /**
 * @author zml2008
 */
-public class BotSession extends AnnotatedSubclassConfiguration {
+public class BotSession {
     private final String server;
     private final NarwhalBot bot;
     private final NarwhalIRCPlugin plugin;
@@ -59,13 +58,11 @@ public class BotSession extends AnnotatedSubclassConfiguration {
     @Setting("bind-address") private String bindAddress;
     @Setting("password") private String password;
     @Setting("connect-timeout") private int connectTimeout = 10000;
-    private static class SSlConfiguration extends AnnotatedSubclassConfiguration {
+
+    @ConfigSerializable
+    private static class SSlConfiguration {
         @Setting("trust-all-certs") public boolean trustAllCerts;
         @Setting("enabled") public boolean enabled;
-
-        public SSlConfiguration(Configuration config) {
-            super(config);
-        }
     }
 
     private static Map<String, Map<?, ?>> createDefaultChannels() {
@@ -74,41 +71,50 @@ public class BotSession extends AnnotatedSubclassConfiguration {
         return defChannel;
     }
 
-    public BotSession(Configuration config, String server, NarwhalIRCPlugin plugin) {
-        super(config);
+    public BotSession(ConfigurationNode config, String server, NarwhalIRCPlugin plugin) {
         this.server = server;
         this.plugin = plugin;
-        this.bot = new NarwhalBot(plugin.doesDebugLog());
-        bot.getListenerManager().addListener(new NarwhalBotListener(this, plugin));
-        bot.setMessageDelay(250);
-        bot.setSocketTimeout(connectTimeout);
-        bot.setLogin("Narwhal");
-    }
-
-    public boolean connect() {
-        boolean success = true;
-        bot.startIdentServer();
-        bot.setName(nick);
-
-        if (bindAddress != null && bindAddress.length() > 0) {
+        Configuration.Builder<NarwhalBot> botConfig = new Configuration.Builder<NarwhalBot>()
+                .setMessageDelay(250)
+                .setSocketTimeout(connectTimeout)
+                .setLogin("Narwhal")
+                .addListener(new NarwhalBotListener(this, plugin))
+                .setServer(server, port)
+                .setServerPassword(password)
+                .setNickservPassword(nickServPass)
+                .setIdentServerEnabled(true);
+        if (bindAddress != null && !bindAddress.isEmpty()) {
             try {
-                bot.setInetAddress(InetAddress.getByName(bindAddress));
+                botConfig.setLocalAddress(InetAddress.getByName(bindAddress));
             } catch (UnknownHostException e) {
                 plugin.getLogger().log(Level.WARNING, "Error setting bind address: " + e.getMessage(), e);
                 e.printStackTrace();
             }
         }
+        botConfig.setServer(server, port);
+        botConfig.setServerPassword(password);
+        if (ssl.enabled) {
+            UtilSSLSocketFactory factory = new UtilSSLSocketFactory();
+            if (ssl.trustAllCerts) {
+                factory.trustAllCertificates();
+            }
+            botConfig.setSocketFactory(factory);
+        }
+
+
+        this.bot = new NarwhalBot(botConfig.buildConfiguration(), plugin.doesDebugLog());
+    }
+
+    public boolean connect() {
+        boolean success = true;
+        IdentServer.startServer();
+        bot.sendIRC().changeNick(nick);
+
+        if (bindAddress != null && bindAddress.length() > 0) {
+        }
 
         try {
-            if (ssl.enabled) {
-                UtilSSLSocketFactory factory = new UtilSSLSocketFactory();
-                if (this.ssl.trustAllCerts) {
-                    factory.trustAllCertificates();
-                }
-                bot.connect(server, port, password, factory);
-            } else {
-                bot.connect(server, port, password);
-            }
+            bot.startBot();
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, "Error connecting to IRC server " + server + ":" + port, e);
             success = false;
@@ -123,12 +129,9 @@ public class BotSession extends AnnotatedSubclassConfiguration {
         }
 
         if (success) {
-            if (this.nickServPass != null && this.nickServPass.length() > 0) {
-                //bot.sendMessage(bot.getUser("NickServ"), "IDENTIFY " + bot.getName() + " " + this.nickServPass);
-                bot.identify(nickServPass);
-            }
         } else {
             if (bot.isConnected()) {
+                bot.stopBotReconnect();
                 bot.getListenerManager().addListener(new ListenerAdapter() {
                     @Override
                     public void onDisconnect(DisconnectEvent event) throws Exception {
@@ -155,9 +158,9 @@ public class BotSession extends AnnotatedSubclassConfiguration {
                 plugin.getLogger().log(Level.SEVERE, "Error loading channel config data!", e);
             }
             if (source.getKey() != null) {
-                bot.joinChannel(entry.getKey(), source.getKey());
+                bot.sendIRC().joinChannel(entry.getKey(), source.getKey());
             } else {
-                bot.joinChannel(entry.getKey());
+                bot.sendIRC().joinChannel(entry.getKey());
             }
             channelSenders.put(entry.getKey(), source);
             try {
@@ -168,7 +171,7 @@ public class BotSession extends AnnotatedSubclassConfiguration {
     }
 
     public void quit(String reason) {
-        bot.quitServer(reason);
+        bot.sendIRC().quitServer(reason);
         senders.clear();
         channelSenders.clear();
     }
@@ -178,13 +181,13 @@ public class BotSession extends AnnotatedSubclassConfiguration {
     }
 
     public BotCommandSource getSender(String name, String chan) {
-        User user = bot.getUser(name);
-        Channel channel = chan == null ? null : bot.getChannel(chan);
+        User user = bot.getUserChannelDao().getUser(name);
+        Channel channel = chan == null ? null : bot.getUserChannelDao().getChannel(chan);
         return getCommandSource(user, channel);
     }
 
     public BotCommandSource getCommandSource(User user, Channel channel) {
-        Map<String, BotCommandSource> inChannel = getNestedMap(senders,
+        Map<String, BotCommandSource> inChannel = NarwhalIRCUtil.getNestedMap(senders,
                 channel == null ? null : channel.getName());
         BotCommandSource source = inChannel.get(user.getNick());
         if (source == null) {
@@ -195,7 +198,7 @@ public class BotSession extends AnnotatedSubclassConfiguration {
     }
 
     public void removeSender(User user, Channel channel) {
-        Map<String, BotCommandSource> inChannel = getNestedMap(senders, channel.getName());
+        Map<String, BotCommandSource> inChannel = NarwhalIRCUtil.getNestedMap(senders, channel.getName());
         if (inChannel != null) {
             inChannel.remove(user.getNick());
         }

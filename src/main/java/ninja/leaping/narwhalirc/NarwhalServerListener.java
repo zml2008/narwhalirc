@@ -15,25 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc;
+package ninja.leaping.narwhalirc;
 
-import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
-import org.spout.api.chat.ChatArguments;
-import org.spout.api.chat.style.ChatStyle;
-import org.spout.api.event.EventHandler;
-import org.spout.api.event.Listener;
-import org.spout.api.event.Order;
-import org.spout.api.event.Result;
-import org.spout.api.event.player.PlayerChatEvent;
-import org.spout.api.event.player.PlayerJoinEvent;
-import org.spout.api.event.player.PlayerKickEvent;
-import org.spout.api.event.player.PlayerLeaveEvent;
-import org.spout.api.event.server.permissions.PermissionGetAllWithNodeEvent;
+import ninja.leaping.narwhalirc.chatstyle.IrcStyleHandler;
+import org.spongepowered.api.event.entity.living.player.PlayerChatEvent;
+import org.spongepowered.api.event.entity.living.player.PlayerJoinEvent;
+import org.spongepowered.api.event.entity.living.player.PlayerQuitEvent;
+import org.spongepowered.api.util.event.Order;
+import org.spongepowered.api.util.event.Subscribe;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class NarwhalServerListener implements Listener {
+public class NarwhalServerListener {
     private static final Map<String, Integer> dupeMessages = new HashMap<String, Integer>();
     private final NarwhalIRCPlugin plugin;
 
@@ -67,7 +61,7 @@ public class NarwhalServerListener implements Listener {
         dupeMessages.put(message, chanCount);
     }
 
-    @EventHandler(order = Order.MONITOR)
+    @Subscribe(order = Order.MONITOR)
     public void onChat(PlayerChatEvent event) {
         if (event.isCancelled()) {
             return;
@@ -89,7 +83,7 @@ public class NarwhalServerListener implements Listener {
         }
     }
 
-    @EventHandler(order = Order.MONITOR)
+    @Subscribe(order = Order.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         if (event.getMessage() == null) {
             return;
@@ -100,8 +94,8 @@ public class NarwhalServerListener implements Listener {
         plugin.broadcastBotMessage(PassedEvent.JOIN, items);
     }
 
-    @EventHandler(order = Order.MONITOR)
-    public void onQuit(PlayerLeaveEvent event) {
+    @Subscribe(order = Order.POST)
+    public void onQuit(PlayerQuitEvent event) {
         if (event.isCancelled() || event.getMessage() == null) {
             return;
         }
@@ -110,37 +104,5 @@ public class NarwhalServerListener implements Listener {
         ChatArguments items = new ChatArguments();
         items.append("[").append(event.getMessage()).append(ChatStyle.RESET).append("]");
         plugin.broadcastBotMessage(passedEvent, items);
-    }
-
-    @EventHandler(order = Order.EARLIEST)
-    public void onGetAllWithNode(PermissionGetAllWithNodeEvent event) {
-        boolean blacklisted = false;
-        for (String node : event.getNodes()) {
-            if (NarwhalIRCPlugin.BLACKLISTED_BOT_PERMS.contains(node)) {
-                blacklisted = true;
-                break;
-            } else if (NarwhalIRCPlugin.BLACKLISTED_BOT_PERMS.contains("-" + node)) {
-                blacklisted = false;
-                break;
-            }
-        }
-
-        for (BotSession bot : plugin.getBots()) {
-            channels: for (ChannelCommandSource channel : bot.getChannels()) {
-                if (blacklisted) {
-                    event.getReceivers().put(channel, Result.DENY);
-                    continue;
-                }
-
-                for (String node : event.getNodes()) {
-                    Boolean perm = channel.getRawPermission(node);
-                    if (perm != null) {
-                        event.getReceivers().put(channel, perm ? Result.ALLOW : Result.DENY);
-                        continue channels;
-                    }
-                }
-                event.getReceivers().put(channel, Result.DEFAULT);
-            }
-        }
     }
 }

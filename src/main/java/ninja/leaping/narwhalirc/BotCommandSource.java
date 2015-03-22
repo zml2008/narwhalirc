@@ -15,21 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc;
+package ninja.leaping.narwhalirc;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
-import com.zachsthings.narwhal.irc.util.NarwhalIRCUtil;
+import ninja.leaping.narwhalirc.chatstyle.IrcStyleHandler;
+import ninja.leaping.narwhalirc.util.NarwhalIRCUtil;
 import org.pircbotx.Channel;
 import org.pircbotx.User;
-import org.spout.api.chat.ChatArguments;
-import org.spout.api.chat.channel.ChatChannel;
-import org.spout.api.command.CommandSource;
-import org.spout.api.data.ValueHolder;
-import org.spout.api.data.ValueHolderBase;
-import org.spout.api.geo.World;
-import org.spout.api.lang.Locale;
+import org.spongepowered.api.service.permission.Subject;
+import org.spongepowered.api.service.permission.SubjectCollection;
+import org.spongepowered.api.service.permission.SubjectData;
+import org.spongepowered.api.service.permission.context.Context;
+import org.spongepowered.api.text.message.Message;
+import org.spongepowered.api.util.Tristate;
+import org.spongepowered.api.util.command.CommandSource;
 
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -51,27 +54,11 @@ public class BotCommandSource implements CommandSource {
 
     private final boolean stripColor;
 
-    private final AtomicReference<ChatChannel> activeChannel = new AtomicReference<ChatChannel>(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL);
-
     public BotCommandSource(NarwhalIRCPlugin plugin, User user, Channel channel, boolean stripColor) {
         this.plugin = plugin;
         this.user = user;
         this.channel = channel;
         this.stripColor = stripColor;
-    }
-
-    @Override
-    public boolean sendMessage(Object... message) {
-        return sendMessage(new ChatArguments(message));
-    }
-
-    @Override
-    public void sendCommand(String cmd, ChatArguments args) {
-        if (cmd.equalsIgnoreCase("say")) {
-            sendMessage(args);
-        } else {
-            processCommand(cmd, args);
-        }
     }
 
     @Override
@@ -84,17 +71,6 @@ public class BotCommandSource implements CommandSource {
         } else {
             sendMessage(ChatStyle.RED, "Unknown command: " + cmdName);
         }*/
-    }
-
-    @Override
-    public boolean sendMessage(ChatArguments message) {
-        String messageStr = stripColor ? message.getPlainString() : message.asString(IrcStyleHandler.ID);
-        if (channel == null) {
-            user.getBot().sendMessage(user, messageStr);
-        } else {
-            user.getBot().sendMessage(channel, "_" + user.getNick().substring(1) + ": " + messageStr);
-        }
-        return true;
     }
 
     @Override
@@ -135,53 +111,18 @@ public class BotCommandSource implements CommandSource {
     }
 
     @Override
-    public ValueHolder getData(String s) {
-        return getData(null, s);
+    public void sendMessage(String... strings) {
+
     }
 
     @Override
-    public ValueHolder getData(World world, String s) {
-        return new ValueHolderBase.NullHolder();
+    public void sendMessage(Message... messages) {
+
     }
 
     @Override
-    public boolean hasData(String s) {
-        return hasData(null, s);
-    }
+    public void sendMessage(Iterable<Message> iterable) {
 
-    @Override
-    public boolean hasData(World world, String s) {
-        return false;
-    }
-
-    @Override
-    public boolean hasPermission(String s) {
-        return hasPermission(null, s);
-    }
-
-    @Override
-    public boolean hasPermission(World world, String s) {
-        return false;
-    }
-
-    @Override
-    public boolean isInGroup(String s) {
-        return isInGroup(null, s);
-    }
-
-    @Override
-    public boolean isInGroup(World world, String s) {
-        return false;
-    }
-
-    @Override
-    public String[] getGroups() {
-        return getGroups(null);
-    }
-
-    @Override
-    public String[] getGroups(World world) {
-        return new String[0];
     }
 
     public User getUser() {
@@ -190,5 +131,70 @@ public class BotCommandSource implements CommandSource {
 
     public Channel getChannel() {
         return channel;
+    }
+
+    @Override
+    public String getIdentifier() {
+        return null;
+    }
+
+    @Override
+    public Optional<CommandSource> getCommandSource() {
+        return null;
+    }
+
+    @Override
+    public SubjectCollection getContainingCollection() {
+        return null;
+    }
+
+    @Override
+    public SubjectData getData() {
+        return null;
+    }
+
+    @Override
+    public SubjectData getTransientData() {
+        return null;
+    }
+
+    @Override
+    public boolean hasPermission(Set<Context> set, String s) {
+        return false;
+    }
+
+    @Override
+    public boolean hasPermission(String s) {
+        return false;
+    }
+
+    @Override
+    public Tristate getPermissionValue(Set<Context> set, String s) {
+        return null;
+    }
+
+    @Override
+    public boolean isChildOf(Subject subject) {
+        return false;
+    }
+
+    @Override
+    public boolean isChildOf(Set<Context> set, Subject subject) {
+        return false;
+    }
+
+    @Override
+    public List<Subject> getParents() {
+        return null;
+    }
+
+    @Override
+    public List<Subject> getParents(Set<Context> set) {
+        return null;
+    }
+
+    @Override
+    public Set<Context> getActiveContexts() {
+        return null;
     }
 }

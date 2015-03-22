@@ -15,39 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc;
+package ninja.leaping.narwhalirc;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.narwhalirc.chatstyle.IrcStyleHandler;
 import org.pircbotx.Channel;
-import org.spout.api.chat.ChatArguments;
-import org.spout.api.chat.ChatTemplate;
-import org.spout.api.chat.Placeholder;
-import org.spout.api.chat.channel.ChatChannel;
-import org.spout.api.chat.style.ChatStyle;
-import org.spout.api.command.Command;
-import org.spout.api.command.CommandSource;
-import org.spout.api.data.ValueHolder;
-import org.spout.api.data.ValueHolderBase;
-import org.spout.api.event.Result;
-import org.spout.api.event.server.permissions.PermissionNodeEvent;
-import org.spout.api.geo.World;
-import org.spout.api.lang.Locale;
-import org.spout.api.util.config.Configuration;
-import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
-import org.spout.api.util.config.annotated.Setting;
+import org.spongepowered.api.service.permission.Subject;
+import org.spongepowered.api.service.permission.SubjectCollection;
+import org.spongepowered.api.service.permission.SubjectData;
+import org.spongepowered.api.service.permission.context.Context;
+import org.spongepowered.api.text.message.Message;
+import org.spongepowered.api.util.Tristate;
+import org.spongepowered.api.util.command.CommandSource;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * There is one ChannelCommandSource per channel which handles broad
  */
-public class ChannelCommandSource extends AnnotatedSubclassConfiguration implements CommandSource {
+public class ChannelCommandSource implements CommandSource {
     public static final Placeholder NAME = new Placeholder("NAME"), CHANNEL = new Placeholder("CHANNEL"), MESSAGE = new Placeholder("MESSAGE"), EVENT = new Placeholder("EVENT");
 
 	@Setting("key") private String channelKey;
-	@Setting("permissions") private Map<String, Boolean> permissions = new HashMap<String, Boolean>();
 	@Setting("receive-events") private Set<PassedEvent> receiveEvents = new HashSet<PassedEvent>(Arrays.asList(PassedEvent.values()));
     @Setting("send-events") private Set<PassedEvent> sendEvents = new HashSet<PassedEvent>(Arrays.asList(PassedEvent.values()));
     @Setting({"format", "irc-to-server"}) public ChatTemplate ircToServerFormat = new ChatTemplate(new ChatArguments("<", NAME, "> ", CHANNEL, ": ", MESSAGE));
@@ -58,8 +49,7 @@ public class ChannelCommandSource extends AnnotatedSubclassConfiguration impleme
     private boolean stripColor;
     private final AtomicReference<ChatChannel> activeChannel = new AtomicReference<ChatChannel>(NarwhalIRCPlugin.IRC_BROADCAST_CHANNEL);
 
-    public ChannelCommandSource(NarwhalIRCPlugin plugin, Configuration config, Channel channel, boolean stripColor) {
-        super(config);
+    public ChannelCommandSource(NarwhalIRCPlugin plugin, Channel channel, boolean stripColor) {
         this.plugin = plugin;
         this.channel = channel;
         this.stripColor = stripColor;
@@ -164,65 +154,87 @@ public class ChannelCommandSource extends AnnotatedSubclassConfiguration impleme
     }
 
     @Override
-    public ValueHolder getData(String s) {
-        return getData(null, s);
+    public void sendMessage(String... strings) {
+       for (String msg : strings) {
+           channel.send().message(msg);
+       }
     }
 
     @Override
-    public ValueHolder getData(World world, String s) {
-        return new ValueHolderBase.NullHolder();
-    }
-
-    @Override
-    public boolean hasData(String s) {
-        return hasData(null, s);
-    }
-
-    @Override
-    public boolean hasData(World world, String s) {
-        return false;
-    }
-
-    @Override
-    public boolean hasPermission(String permission) {
-        return hasPermission(null, permission);
-    }
-
-    @Override
-    public boolean hasPermission(World world, String permission) {
-        PermissionNodeEvent event = new PermissionNodeEvent(world, this, permission);
-        for (String perm : event.getNodes()) {
-            Boolean val = permissions.get(perm);
-            if (val != null) {
-                event.setResult(val ? Result.ALLOW : Result.DENY);
-                break;
-            }
+    public void sendMessage(Message... messages) {
+        for (Message msg : messages) {
+            channel.send().message(msg.toString());
         }
-        plugin.getEngine().getEventManager().callEvent(event);
-        return event.getResult() == Result.ALLOW;
-    }
 
-    public Boolean getRawPermission(String perm) {
-        return permissions.get(perm);
     }
 
     @Override
-    public boolean isInGroup(String s) {
-        return isInGroup(null, s);
+    public void sendMessage(Iterable<Message> iterable) {
+
     }
 
     @Override
-    public boolean isInGroup(World world, String s) {
+    public String getIdentifier() {
+        return getName();
+    }
+
+    @Override
+    public Optional<CommandSource> getCommandSource() {
+        return Optional.<CommandSource>of(this);
+    }
+
+    @Override
+    public SubjectCollection getContainingCollection() {
+        return null;
+    }
+
+    @Override
+    public SubjectData getData() {
+        return null;
+    }
+
+    @Override
+    public SubjectData getTransientData() {
+        return null;
+    }
+
+    @Override
+    public boolean hasPermission(Set<Context> set, String s) {
         return false;
     }
 
     @Override
-    public String[] getGroups() {
-        return getGroups(null);
+    public boolean hasPermission(String s) {
+        return false;
     }
 
     @Override
-    public String[] getGroups(World world) {
-        return new String[0];
+    public Tristate getPermissionValue(Set<Context> set, String s) {
+        return null;
+    }
+
+    @Override
+    public boolean isChildOf(Subject subject) {
+        return false;
+    }
+
+    @Override
+    public boolean isChildOf(Set<Context> set, Subject subject) {
+        return false;
+    }
+
+    @Override
+    public List<Subject> getParents() {
+        return null;
+    }
+
+    @Override
+    public List<Subject> getParents(Set<Context> set) {
+        return null;
+    }
+
+    @Override
+    public Set<Context> getActiveContexts() {
+        return null;
     }
 }

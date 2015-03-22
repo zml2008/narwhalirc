@@ -15,14 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc.util;
+package ninja.leaping.narwhalirc.util;
 
-import org.spout.api.Spout;
-import org.spout.api.chat.ChatArguments;
-import org.spout.api.chat.style.ChatStyle;
-import org.spout.api.command.Command;
-import org.spout.api.command.CommandSource;
-import org.spout.api.command.RootCommand;
+import org.spongepowered.api.util.command.CommandSource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +30,7 @@ public class NarwhalIRCUtil {
     public static boolean handleCommand(CommandSource source, String rawArgs, int styleHandlerId) {
         return handleCommand(source, rawArgs, styleHandlerId, Spout.getEngine().getRootCommand());
     }
-    public static boolean handleCommand(CommandSource source, String rawArgs, int styleHandlerId, RootCommand root) {
+    public static boolean handleCommand(CommandSource source, String rawArgs, int styleHandlerId, CommandDispatcher root) {
         String cmd;
         ChatArguments arguments;
         int spaceIndex = rawArgs.indexOf(" ");
@@ -53,7 +48,7 @@ public class NarwhalIRCUtil {
         return handleCommand(source, cmdName, args, Spout.getEngine().getRootCommand());
     }
 
-    public static boolean handleCommand(CommandSource source, String cmdName, ChatArguments args, RootCommand root) {
+    public static boolean handleCommand(CommandSource source, String cmdName, String args, RootCommand root) {
         Command cmd = root.getChild(cmdName);
         if (cmd != null) {
             cmd.process(source, cmdName, args, false);

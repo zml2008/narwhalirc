@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc.util;
+package ninja.leaping.narwhalirc.util;
 
 import org.spout.api.util.config.Configuration;
 import org.spout.api.util.config.ConfigurationNode;
@@ -38,7 +38,7 @@ public class FormatConfigurationMigrator extends ConfigurationMigrator {
         super(config);
     }
 
-    private static class UpdatePlaceholderPatterns implements MigrationAction {
+    private static class UpdatePlaceholderPatterns implements TransformationAction {
         public static UpdatePlaceholderPatterns INSTANCE = new UpdatePlaceholderPatterns();
 
         public String[] convertKey(String[] key) {

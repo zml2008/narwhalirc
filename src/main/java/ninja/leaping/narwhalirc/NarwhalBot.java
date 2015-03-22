@@ -15,25 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc.chatstyle;
+package ninja.leaping.narwhalirc;
 
-import org.spout.api.chat.style.StyleFormatter;
+import org.pircbotx.Configuration;
+import org.pircbotx.PircBotX;
 
 /**
- * @author zml2008
+ * Our subclass of {@link PircBotX} that fixes an issue where shutdown doesn't correctly
+ * stop the output thread
  */
-public class PrefixStyleFormatter implements StyleFormatter {
-    private final String prefix;
-
-    public PrefixStyleFormatter(String prefix) {
-        this.prefix = prefix;
-    }
-
-    public String getPrefix() {
-        return prefix;
-    }
-
-    public String format(String text) {
-        return prefix + text;
+public class NarwhalBot extends PircBotX {
+    public NarwhalBot(Configuration<NarwhalBot> config, boolean debugLog) {
+        super(config);
+        if (debugLog) {
+            //setVerbose(true);
+        }
     }
 }

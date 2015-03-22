@@ -15,27 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc;
+package ninja.leaping.narwhalirc;
 
-import com.zachsthings.narwhal.irc.util.ChatTemplateSerializer;
-import com.zachsthings.narwhal.irc.util.FormatConfigurationMigrator;
-import org.spout.api.Server;
-import org.spout.api.chat.ChatArguments;
-import org.spout.api.chat.channel.ChatChannel;
-import org.spout.api.chat.channel.PermissionChatChannel;
-import org.spout.api.command.RootCommand;
-import org.spout.api.command.annotated.AnnotatedCommandRegistrationFactory;
-import org.spout.api.command.annotated.SimpleInjector;
-import org.spout.api.exception.ConfigurationException;
-import org.spout.api.plugin.CommonPlugin;
-import org.spout.api.util.config.MapConfiguration;
-import org.spout.api.util.config.annotated.AnnotatedSubclassConfiguration;
-import org.spout.api.util.config.annotated.Setting;
-import org.spout.api.util.config.migration.MigrationException;
-import org.spout.api.util.config.serialization.Serialization;
-import org.spout.api.util.config.yaml.YamlConfiguration;
+import com.google.common.base.Predicate;
+import com.google.inject.Inject;
+import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.loader.ConfigurationLoader;
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
+import ninja.leaping.configurate.transformation.ConfigurationTransformation;
+import ninja.leaping.narwhalirc.util.ChatTemplateSerializer;
+import ninja.leaping.narwhalirc.util.FormatConfigurationMigrator;
+import org.spongepowered.api.Game;
+import org.spongepowered.api.Server;
+import org.spongepowered.api.event.state.InitializationEvent;
+import org.spongepowered.api.event.state.PreInitializationEvent;
+import org.spongepowered.api.event.state.ServerStoppingEvent;
+import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.service.ServiceReference;
+import org.spongepowered.api.service.config.DefaultConfig;
+import org.spongepowered.api.service.permission.PermissionService;
+import org.spongepowered.api.service.permission.SubjectData;
+import org.spongepowered.api.util.Tristate;
+import org.spongepowered.api.util.event.Subscribe;
 
 import java.io.File;
+import java.io.IOError;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -43,53 +49,51 @@ import java.util.logging.Level;
 /**
  * Main class for NarwhalIRC
  */
-public class NarwhalIRCPlugin extends CommonPlugin {
+@Plugin(name = PomData.NAME, version = PomData.VERSION, id=PomData.ARTIFACT_ID)
+public class NarwhalIRCPlugin {
     /**
      * This is the permission required for users to receive messages sent from IRC
      */
     public static final String IRC_BROADCAST_PERMISSION = "narwhal.irc.broadcast";
-    public static final ChatChannel IRC_BROADCAST_CHANNEL = new PermissionChatChannel("NarwhalIRC", "narwhal.irc.broadcast");
+    //public static final ChatChannel IRC_BROADCAST_CHANNEL = new PermissionChatChannel("NarwhalIRC", "narwhal.irc.broadcast");
     /**
      * A Set of permissions that no bot has
      */
-    public static final Set<String> BLACKLISTED_BOT_PERMS =
-            Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
-                    IRC_BROADCAST_PERMISSION,
-                    "spout.chat.send",
-                    "spout.chat.receive",
-                    "spout.chat.receive.*",
-                    "-spout.chat.receive.console")));
     private LocalConfiguration config;
     private final Map<String, BotSession> bots = new ConcurrentHashMap<String, BotSession>();
     /**
      * The commands available for bots.
      */
     private RootCommand botCommands;
-    private Server server;
-    /**
-     * The AnnotatedCommandRegistrationFactory
-     */
-    private final AnnotatedCommandRegistrationFactory commandRegistration =
-            new AnnotatedCommandRegistrationFactory(new SimpleInjector(this));
+    @Inject
+    private Game game;
+    @Inject @DefaultConfig(sharedRoot = true) private ConfigurationLoader<CommentedConfigurationNode> configLoader;
+    private ServiceReference<PermissionService> perms;
 
-    @Override
-    public void onLoad() {
-        getEngine().getDefaultPermissions().addDefaultPermission(IRC_BROADCAST_PERMISSION);
+    @Subscribe
+    public void onLoad(PreInitializationEvent event) {
+        perms.executeWhenPresent(new Predicate<PermissionService>() {
+            @Override
+            public boolean apply(PermissionService permissionService) {
+                permissionService.getDefaultData().setPermission(SubjectData.GLOBAL_CONTEXT, IRC_BROADCAST_PERMISSION, Tristate.TRUE);
+                return true;
+            }
+        });
     }
 
-    @Override
-    public void onEnable() {
-        if (!(getEngine() instanceof Server)) {
+    @Subscribe
+    public void onEnable(InitializationEvent event) {
+        if (!game.getServer().isPresent()) {
             throw new IllegalStateException("NarwhalIRC can only run on servers!");
         }
+
         this.server = (Server) getEngine();
 
         botCommands = new RootCommand(getEngine());
-        config = new LocalConfiguration(new File(getDataFolder(), "config.yml"));
-        Serialization.registerSerializer(new ChatTemplateSerializer());
+        TypeSerializers.registerSerializer(new ChatTemplateSerializer());
         try {
             loadConfig();
-        } catch (ConfigurationException e) {
+        } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Unable to load configuration for plugin: " + e.getMessage(), e);
         }
 
@@ -98,33 +102,31 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         botCommands.addSubCommands(this, BasicBotCommands.class, commandRegistration);
     }
 
-    @Override
-    public void onReload() {
-        super.onReload();
+    public void reload() {
         for (BotSession bot : bots.values()) {
             bot.quit("Reloading NarwhalIRC!");
         }
         bots.clear();
         try {
             loadConfig();
-        } catch (ConfigurationException e) {
+        } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Unable to load configuration for plugin: " + e.getMessage(), e);
         }
     }
 
-    @Override
-    public void onDisable() {
+    @Subscribe
+    public void onDisable(ServerStoppingEvent event) {
         for (BotSession bot : bots.values()) {
             bot.quit("Disabling");
         }
         bots.clear();
     }
 
-    public Server getServer() {
-        return server;
+    public Game getGame() {
+        return game;
     }
 
-    private class LocalConfiguration extends AnnotatedSubclassConfiguration {
+    private class LocalConfiguration {
         @Setting("command-prefix")
         public String commandPrefix = ".";
         @Setting("debug-log")
@@ -134,30 +136,21 @@ public class NarwhalIRCPlugin extends CommonPlugin {
         @Setting("private-commands")
         public boolean privateCommands = true;
         @Setting("connections")
-        public Map<String, Map<?, ?>> serverMap = createServerMap();
-
-        public LocalConfiguration(File file) {
-            super(new YamlConfiguration(file));
-        }
+        public Map<String, BotSession> serverMap = createServerMap();
 
         private Map<String, Map<?, ?>> createServerMap() {
             Map<String, Map<?, ?>> ret = new HashMap<String, Map<?, ?>>();
             Map<String, Object> defServer = new HashMap<String, Object>();
             defServer.put("port", "6667");
-            ret.put("irc.zachsthings.com", defServer);
+            ret.put("irc.leaping.ninja", defServer);
             return ret;
         }
     }
 
-    protected void loadConfig() throws ConfigurationException {
-        config.load();
-        FormatConfigurationMigrator migrator = new FormatConfigurationMigrator(config);
-        try {
-            migrator.migrate();
-        } catch (MigrationException e) {
-            getLogger().log(Level.SEVERE, "Could not migrate NarwhalIRC configuration to new format", e);
-            return;
-        }
+    protected void loadConfig() throws IOError {
+        config = configLoader.load();
+        ConfigurationTransformation migrator = ConfigurationMigrators.format();
+        migrator.apply(config);
         for (Map.Entry<String, Map<?, ?>> entry : config.serverMap.entrySet()) {
             BotSession bot = new BotSession(new MapConfiguration(entry.getValue()), entry.getKey(), this);
             bot.load();
@@ -170,7 +163,7 @@ public class NarwhalIRCPlugin extends CommonPlugin {
             bots.put(entry.getKey(), bot);
             bot.save();
         }
-        config.save();
+        configLoader.save(config);
     }
 
     /**

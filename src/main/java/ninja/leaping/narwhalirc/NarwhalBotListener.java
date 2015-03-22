@@ -15,21 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc;
+package ninja.leaping.narwhalirc;
 
-import com.zachsthings.narwhal.irc.chatstyle.IrcStyleHandler;
+import ninja.leaping.narwhalirc.chatstyle.IrcStyleHandler;
 import org.pircbotx.PircBotX;
 import org.pircbotx.hooks.Listener;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.*;
-import org.spout.api.chat.ChatArguments;
-import org.spout.api.chat.style.ChatStyle;
-import org.spout.api.scheduler.TaskPriority;
 
 /**
  * Listener for events coming from a NarwhalBot instance
  */
-public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Listener<PircBotX> {
+public class NarwhalBotListener extends ListenerAdapter<NarwhalBot> implements Listener<NarwhalBot> {
     private final BotSession session;
     private final NarwhalIRCPlugin plugin;
 
@@ -39,7 +36,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     }
 
     @Override
-    public void onMessage(MessageEvent<PircBotX> event) {
+    public void onMessage(MessageEvent<NarwhalBot> event) {
         if (plugin.doesChannelCommands()) {
             ChannelCommandSource source = session.getChannel(event.getChannel().getName());
             if (source == null) {
@@ -66,7 +63,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     }
 
     @Override
-    public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
+    public void onPrivateMessage(PrivateMessageEvent<NarwhalBot> event) {
         if (plugin.doesPrivateCommands()) {
             if (event.getMessage().startsWith(plugin.getCommandPrefix())) {
                 session.handleCommand(event.getUser(), null, event.getMessage().substring(plugin.getCommandPrefix().length()));
@@ -78,7 +75,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     }
 
     @Override
-    public void onJoin(JoinEvent<PircBotX> event) {
+    public void onJoin(JoinEvent<NarwhalBot> event) {
         ChannelCommandSource channel = session.getChannel(event.getChannel().getName());
         if (channel == null) {
             return;
@@ -95,7 +92,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     }
 
     @Override
-    public void onPart(PartEvent<PircBotX> event) {
+    public void onPart(PartEvent<NarwhalBot> event) {
         ChannelCommandSource channel = session.getChannel(event.getChannel().getName());
         if (channel == null) {
             return;
@@ -119,7 +116,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     }
 
     @Override
-    public void onQuit(QuitEvent<PircBotX> event) {
+    public void onQuit(QuitEvent<NarwhalBot> event) {
         boolean broadcastQuit = false;
         boolean contains = false;
         for (ChannelCommandSource source : session.getChannels()) {
@@ -152,7 +149,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     }
 
     @Override
-    public void onKick(final KickEvent<PircBotX> event) {
+    public void onKick(final KickEvent<NarwhalBot> event) {
         if (event.getRecipient().getNick().equals(event.getBot().getNick())) {
             plugin.getEngine().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                 public void run() {
@@ -179,7 +176,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     }
 
     @Override
-    public void onAction(ActionEvent<PircBotX> event) {
+    public void onAction(ActionEvent<NarwhalBot> event) {
         ChannelCommandSource channel = session.getChannel(event.getChannel().getName());
         if (channel == null || !channel.sendsEvent(PassedEvent.ACTION)) {
             return;
@@ -190,7 +187,7 @@ public class NarwhalBotListener extends ListenerAdapter<PircBotX> implements Lis
     }
 
     @Override
-    public void onNickChange(NickChangeEvent<PircBotX> event) {
+    public void onNickChange(NickChangeEvent<NarwhalBot> event) {
         if (!(event.getOldNick().equals(event.getBot().getNick()) || event.getNewNick().equals(event.getBot().getNick()))) {
             session.removeSender(event.getUser());
         }

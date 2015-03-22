@@ -15,13 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.zachsthings.narwhal.irc.chatstyle;
+package ninja.leaping.narwhalirc.chatstyle;
 
 import org.pircbotx.Colors;
-import org.spout.api.chat.ChatArguments;
-import org.spout.api.chat.style.ChatStyle;
-import org.spout.api.chat.style.StyleFormatter;
-import org.spout.api.chat.style.StyleHandler;
 
 import java.util.*;
 import java.util.regex.Matcher;
